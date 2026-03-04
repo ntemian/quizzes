@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Η Μάχη του Μαραθώνα - Quiz!</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --sky-top:#0a0e2a;--sky-mid:#1a2a5c;--sky-bot:#2a1a0a;
+  --accent:#ffd700;--accent2:#cd7f32;
+  --card-bg:rgba(15,25,60,0.75);--card-border:rgba(255,215,0,0.12);
+  --btn-bg:#0f1930;--btn-hover:#1a2a50;
+  --text-primary:#f5e6c8;--text-secondary:#a89878;
+  --correct:#4caf50;--wrong:#f44336;--streak-color:#ff6b35;
+}
+html,body{height:100%;overflow-x:hidden}
+body{
+  font-family:'Nunito',sans-serif;color:var(--text-primary);
+  background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-mid) 40%,#2a1a3a 70%,var(--sky-bot) 100%);
+  background-attachment:fixed;min-height:100vh;
+}
+
+/* ===== ANIMATED BACKGROUND ===== */
+#bg-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+
+/* ===== SCREEN FLASH ===== */
+#screen-flash{
+  position:fixed;top:0;left:0;width:100%;height:100%;z-index:50;
+  pointer-events:none;opacity:0;transition:opacity 0.15s;
+}
+#screen-flash.flash-green{background:rgba(76,175,80,0.25);opacity:1}
+#screen-flash.flash-red{background:rgba(244,67,54,0.25);opacity:1}
+#screen-flash.flash-gold{background:rgba(255,215,0,0.3);opacity:1}
+
+/* ===== LAYOUT ===== */
+#app{position:relative;z-index:1;max-width:640px;margin:0 auto;padding:16px;min-height:100vh}
+.screen{display:none;flex-direction:column;align-items:center;animation:fadeUp .5s ease-out}
+.screen.active{display:flex}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== GLASS CARD ===== */
+.glass{
+  background:var(--card-bg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--card-border);border-radius:20px;padding:28px;width:100%;
+}
+
+/* ===== START SCREEN ===== */
+.logo-emoji{font-size:80px;display:block;text-align:center;animation:float 3s ease-in-out infinite;margin-bottom:8px}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.title{font-family:'Fredoka One',cursive;font-size:clamp(1.8rem,5vw,2.6rem);text-align:center;color:var(--accent);line-height:1.2}
+.subtitle{text-align:center;font-size:1.1rem;color:var(--text-secondary);margin:6px 0 24px}
+.divider{text-align:center;font-size:1.5rem;letter-spacing:12px;margin:8px 0 16px;opacity:.6}
+
+.player-label{font-family:'Fredoka One',cursive;font-size:1rem;color:var(--accent);text-align:center;margin-bottom:10px}
+.player-row{display:flex;gap:14px;justify-content:center;margin-bottom:20px}
+.player-btn{
+  flex:1;max-width:180px;padding:16px;border-radius:16px;border:2px solid var(--card-border);
+  background:var(--btn-bg);color:var(--text-primary);font-family:'Fredoka One',cursive;
+  font-size:1.2rem;cursor:pointer;transition:all .25s;text-align:center;
+}
+.player-btn:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 6px 20px rgba(255,215,0,.15)}
+.player-btn.selected{border-color:var(--accent);background:rgba(255,215,0,.1);box-shadow:0 0 20px rgba(255,215,0,.2)}
+.player-btn .p-emoji{font-size:2.2rem;display:block;margin-bottom:4px}
+
+.highscore-box{
+  text-align:center;font-size:.9rem;color:var(--text-secondary);
+  margin-bottom:16px;min-height:22px;
+}
+.highscore-box span{color:var(--accent);font-weight:800}
+
+.start-btn{
+  font-family:'Fredoka One',cursive;font-size:1.3rem;padding:16px 52px;
+  border:2px solid var(--accent);background:linear-gradient(135deg,#1a2a5c,#2a4a8c);
+  color:var(--accent);border-radius:40px;cursor:pointer;transition:all .3s;
+  letter-spacing:2px;opacity:.4;pointer-events:none;
+}
+.start-btn.enabled{opacity:1;pointer-events:auto}
+.start-btn.enabled:hover{transform:scale(1.05);box-shadow:0 0 30px rgba(255,215,0,.3)}
+
+/* ===== HUD ===== */
+.hud{display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:12px;padding:10px 0}
+.hud-score{display:flex;align-items:center;gap:6px;font-family:'Fredoka One',cursive;font-size:1.2rem;color:var(--accent)}
+.hud-score .val{font-size:1.4rem;transition:all .3s}
+.hud-score .val.pop{animation:pop .35s ease-out}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.5);color:#fff}100%{transform:scale(1)}}
+.hud-streak{display:flex;align-items:center;gap:4px;font-size:1rem;color:var(--streak-color)}
+.hud-streak.fire{animation:fireGlow .4s ease-in-out infinite alternate}
+@keyframes fireGlow{from{text-shadow:0 0 8px var(--streak-color)}to{text-shadow:0 0 20px #ff4500,0 0 35px var(--streak-color)}}
+.hud-qnum{font-size:.9rem;color:var(--text-secondary)}
+
+/* ===== PROGRESS BAR ===== */
+.progress-wrap{width:100%;height:28px;background:rgba(255,255,255,.06);border-radius:14px;margin-bottom:10px;position:relative;overflow:visible}
+.progress-fill{height:100%;border-radius:14px;background:linear-gradient(90deg,var(--accent2),var(--accent),#fff8dc);background-size:200% 100%;animation:shimmer 2s linear infinite;transition:width .6s cubic-bezier(.4,0,.2,1)}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.progress-rider{
+  position:absolute;top:-6px;transition:left .6s cubic-bezier(.4,0,.2,1);
+  font-size:28px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));z-index:2;
+}
+
+/* ===== TIMER ===== */
+.timer-wrap{width:100%;height:6px;background:rgba(255,255,255,.08);border-radius:4px;margin-bottom:16px;overflow:hidden}
+.timer-fill{height:100%;border-radius:4px;width:100%;transition:width .1s linear,background .5s}
+
+/* ===== QUESTION CARD ===== */
+.q-card{width:100%;margin-bottom:18px;position:relative;overflow:hidden}
+.q-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent))}
+.q-badge{
+  display:inline-block;font-family:'Fredoka One',cursive;font-size:.75rem;
+  padding:4px 14px;border-radius:20px;margin-bottom:12px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0a0e2a;
+}
+.q-text{font-size:clamp(1.05rem,3vw,1.3rem);font-weight:700;line-height:1.55}
+
+/* Character ID card with emoji portrait */
+.char-portrait{
+  font-size:56px;display:block;text-align:center;margin:10px 0;
+  filter:drop-shadow(0 4px 12px rgba(255,215,0,.3));
+}
+.char-detail{
+  text-align:center;font-size:.85rem;color:var(--accent);
+  background:rgba(255,215,0,.08);padding:4px 12px;border-radius:10px;
+  display:inline-block;margin:0 auto 10px;
+}
+
+/* ===== OPTIONS ===== */
+.options{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%}
+@media(max-width:500px){.options{grid-template-columns:1fr}}
+.opt-btn{
+  position:relative;padding:14px 16px;border:2px solid rgba(255,255,255,.1);
+  background:var(--btn-bg);color:var(--text-primary);font-size:1rem;font-weight:700;
+  border-radius:14px;cursor:pointer;transition:all .25s;text-align:left;
+  display:flex;align-items:center;gap:10px;overflow:hidden;
+}
+.opt-letter{
+  flex-shrink:0;width:32px;height:32px;border-radius:50%;
+  background:rgba(255,215,0,.1);border:2px solid rgba(255,215,0,.2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Fredoka One',cursive;font-size:.85rem;color:var(--accent);
+}
+.opt-btn:hover:not(.locked){border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 18px rgba(255,215,0,.12)}
+.opt-btn:hover:not(.locked) .opt-letter{background:rgba(255,215,0,.25)}
+.opt-btn.correct{border-color:var(--correct);background:rgba(76,175,80,.2);animation:correctPulse .5s ease-out}
+.opt-btn.correct .opt-letter{background:var(--correct);border-color:var(--correct);color:#fff}
+@keyframes correctPulse{0%{transform:scale(1)}30%{transform:scale(1.02)}60%{transform:scale(.99)}100%{transform:scale(1)}}
+.opt-btn.wrong{border-color:var(--wrong);background:rgba(244,67,54,.15);animation:shake .45s ease-out}
+.opt-btn.wrong .opt-letter{background:var(--wrong);border-color:var(--wrong);color:#fff}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.opt-btn.locked{pointer-events:none;opacity:.45}
+.opt-btn.correct.locked,.opt-btn.wrong.locked{opacity:1}
+.opt-btn.tf-btn{justify-content:center;text-align:center;padding:18px}
+
+/* ===== HINT BUTTON ===== */
+.hint-row{width:100%;display:flex;justify-content:center;margin-top:12px}
+.hint-btn{
+  font-family:'Nunito',sans-serif;font-size:.9rem;font-weight:700;
+  padding:8px 22px;border:1px solid rgba(255,215,0,.25);border-radius:20px;
+  background:rgba(255,215,0,.08);color:var(--accent);cursor:pointer;transition:all .25s;
+}
+.hint-btn:hover{background:rgba(255,215,0,.15);border-color:var(--accent)}
+.hint-btn.used{display:none}
+
+.hint-box{
+  width:100%;margin-top:10px;padding:12px 16px;border-radius:12px;
+  background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.15);
+  font-size:.95rem;color:var(--accent);display:none;text-align:center;
+}
+.hint-box.show{display:block;animation:fadeUp .3s ease-out}
+
+/* ===== EXPLANATION BOX ===== */
+.explain-box{
+  width:100%;margin-top:14px;padding:16px;border-radius:14px;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  display:none;animation:fadeUp .35s ease-out;
+}
+.explain-box.show{display:block}
+.explain-box.correct-explain{background:rgba(76,175,80,.12);border:1px solid rgba(76,175,80,.3)}
+.explain-box.wrong-explain{background:rgba(244,67,54,.1);border:1px solid rgba(244,67,54,.25)}
+.explain-icon{font-size:1.8rem;display:block;text-align:center;margin-bottom:6px}
+.explain-title{font-family:'Fredoka One',cursive;font-size:1rem;text-align:center;margin-bottom:4px}
+.explain-text{font-size:.95rem;text-align:center;line-height:1.5;color:var(--text-primary);opacity:.9}
+
+/* ===== NEXT BUTTON ===== */
+.next-btn{
+  margin-top:14px;padding:12px 36px;font-family:'Fredoka One',cursive;font-size:1rem;
+  border:2px solid var(--accent);background:linear-gradient(135deg,#1a2a5c,#2a4a8c);
+  color:var(--accent);border-radius:30px;cursor:pointer;transition:all .3s;display:none;
+}
+.next-btn.show{display:inline-block;animation:fadeUp .3s ease-out}
+.next-btn:hover{transform:scale(1.05);box-shadow:0 4px 16px rgba(255,215,0,.25)}
+
+/* ===== FLIP EMOJI ===== */
+.flip-emoji{
+  position:fixed;font-size:60px;pointer-events:none;z-index:60;
+  animation:flipSpin 1.2s ease-out forwards;
+}
+@keyframes flipSpin{
+  0%{opacity:1;transform:translate(-50%,-50%) scale(0) rotateY(0)}
+  40%{transform:translate(-50%,-50%) scale(1.3) rotateY(360deg)}
+  100%{opacity:0;transform:translate(-50%,-80%) scale(.6) rotateY(720deg)}
+}
+
+/* ===== SPARKLE BURST ===== */
+.sparkle{
+  position:fixed;pointer-events:none;z-index:55;font-size:1.4rem;
+  animation:sparkleFly 1s ease-out forwards;
+}
+@keyframes sparkleFly{
+  0%{opacity:1;transform:translate(0,0) scale(1)}
+  100%{opacity:0;transform:translate(var(--sx),var(--sy)) scale(.3)}
+}
+
+/* ===== XP POPUP ===== */
+.xp-pop{
+  position:fixed;pointer-events:none;z-index:60;
+  font-family:'Fredoka One',cursive;font-size:1.4rem;color:var(--accent);
+  text-shadow:0 0 12px rgba(255,215,0,.5);
+  animation:xpFloat 1.3s ease-out forwards;
+}
+@keyframes xpFloat{0%{opacity:1;transform:translateY(0) scale(.6)}20%{transform:translateY(-16px) scale(1.2)}100%{opacity:0;transform:translateY(-80px) scale(.7)}}
+
+/* ===== CONFETTI ===== */
+.confetti-piece{
+  position:fixed;pointer-events:none;z-index:55;font-size:1.4rem;
+  animation:confettiFall var(--dur) linear forwards;
+}
+@keyframes confettiFall{
+  0%{opacity:1;transform:translateY(-20px) rotate(0deg)}
+  100%{opacity:0;transform:translateY(105vh) rotate(var(--rot))}
+}
+
+/* ===== RESULTS ===== */
+.results-card{text-align:center}
+.r-trophy{font-size:80px;display:block;animation:float 3s ease-in-out infinite;margin-bottom:4px}
+.r-title{font-family:'Fredoka One',cursive;font-size:clamp(1.5rem,4vw,2rem);color:var(--accent)}
+.r-sub{font-size:1rem;color:var(--text-secondary);margin-bottom:20px}
+.stars-row{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
+.star-item{font-size:44px;transition:all .3s}
+.star-item.earned{animation:starIn .5s ease-out backwards;filter:drop-shadow(0 0 10px rgba(255,215,0,.5))}
+.star-item.empty{opacity:.15;filter:grayscale(1)}
+@keyframes starIn{0%{transform:scale(0) rotate(-180deg);opacity:0}60%{transform:scale(1.3) rotate(10deg)}100%{transform:scale(1) rotate(0);opacity:1}}
+
+.badge{
+  display:inline-block;padding:8px 24px;margin-bottom:18px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#0a0e2a;font-family:'Fredoka One',cursive;font-size:1rem;border-radius:24px;
+  animation:badgePulse 2s ease-in-out infinite;
+}
+@keyframes badgePulse{0%,100%{box-shadow:0 0 15px rgba(255,215,0,.2)}50%{box-shadow:0 0 30px rgba(255,215,0,.5)}}
+
+.new-record{
+  display:none;font-family:'Fredoka One',cursive;font-size:1.1rem;
+  color:#ff6b35;margin-bottom:12px;animation:recordPulse .6s ease-in-out infinite alternate;
+}
+.new-record.show{display:block}
+@keyframes recordPulse{from{transform:scale(1);text-shadow:0 0 8px rgba(255,107,53,.3)}to{transform:scale(1.08);text-shadow:0 0 20px rgba(255,107,53,.6)}}
+
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.stat-box{background:rgba(255,255,255,.04);border:1px solid var(--card-border);border-radius:14px;padding:14px 8px}
+.stat-val{font-family:'Fredoka One',cursive;font-size:1.6rem;color:var(--accent)}
+.stat-lbl{font-size:.8rem;color:var(--text-secondary);margin-top:2px}
+
+.result-btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.r-btn{
+  font-family:'Fredoka One',cursive;font-size:1rem;padding:12px 32px;
+  border:2px solid var(--accent);background:linear-gradient(135deg,#1a2a5c,#2a4a8c);
+  color:var(--accent);border-radius:30px;cursor:pointer;transition:all .3s;
+}
+.r-btn:hover{transform:scale(1.04);box-shadow:0 4px 16px rgba(255,215,0,.2)}
+.r-btn.secondary{border-color:var(--text-secondary);color:var(--text-secondary)}
+.r-btn.secondary:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ===== REVIEW SCREEN ===== */
+.review-list{width:100%;max-height:60vh;overflow-y:auto;margin:16px 0;display:flex;flex-direction:column;gap:12px}
+.review-item{padding:16px;border-radius:14px;text-align:left}
+.review-item.was-correct{background:rgba(76,175,80,.08);border:1px solid rgba(76,175,80,.2)}
+.review-item.was-wrong{background:rgba(244,67,54,.08);border:1px solid rgba(244,67,54,.2)}
+.review-q{font-weight:700;font-size:1rem;margin-bottom:8px}
+.review-answers{font-size:.9rem;line-height:1.6}
+.review-your{color:var(--wrong)}
+.review-correct-ans{color:var(--correct)}
+.review-explain{font-size:.85rem;color:var(--text-secondary);margin-top:6px;font-style:italic}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,215,0,.2);border-radius:3px}
+
+/* ===== SCREEN SHAKE ===== */
+.screen-shake{animation:shakeIt .4s ease-out}
+@keyframes shakeIt{0%,100%{transform:translate(0)}25%{transform:translate(-4px,2px)}50%{transform:translate(4px,-2px)}75%{transform:translate(-2px,4px)}}
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div id="screen-flash"></div>
+
+<div id="app">
+
+  <!-- ===== START SCREEN ===== -->
+  <div id="start-screen" class="screen active">
+    <div class="glass" style="margin-top:20px">
+      <div class="logo-emoji">🏛️</div>
+      <div class="title">Η Μάχη του Μαραθώνα</div>
+      <div class="divider">⚔️🛡️⚔️🛡️⚔️</div>
+      <div class="subtitle">490 π.Χ. — Ένα Quiz Περιπέτειας!</div>
+      <div class="player-label">Ποιος παίζει;</div>
+      <div class="player-row">
+        <button class="player-btn" data-player="Ajax" onclick="selectPlayer('Ajax')">
+          <span class="p-emoji">🛡️</span>Ajax
+        </button>
+        <button class="player-btn" data-player="Clio" onclick="selectPlayer('Clio')">
+          <span class="p-emoji">🏛️</span>Clio
+        </button>
+      </div>
+      <div class="highscore-box" id="highscore-box"></div>
+      <div style="text-align:center">
+        <button class="start-btn" id="start-btn" onclick="startGame()">ΞΕΚΙΝΑ!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== QUIZ SCREEN ===== -->
+  <div id="quiz-screen" class="screen">
+    <div class="hud">
+      <div class="hud-score">⭐ <span class="val" id="hud-score">0</span></div>
+      <div class="hud-streak" id="hud-streak">🔥 <span id="hud-streak-val">0</span></div>
+      <div class="hud-qnum" id="hud-qnum">1/15</div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+      <div class="progress-rider" id="progress-rider">🏃</div>
+    </div>
+    <div class="timer-wrap"><div class="timer-fill" id="timer-fill"></div></div>
+    <div class="q-card glass" id="q-card">
+      <div class="q-badge" id="q-badge">ΙΣΤΟΡΙΑ</div>
+      <div class="char-portrait" id="char-portrait" style="display:none"></div>
+      <div class="char-detail" id="char-detail" style="display:none"></div>
+      <div class="q-text" id="q-text"></div>
+    </div>
+    <div class="options" id="options"></div>
+    <div class="hint-row" id="hint-row">
+      <button class="hint-btn" id="hint-btn" onclick="useHint()">💡 Βοήθεια</button>
+    </div>
+    <div class="hint-box" id="hint-box"></div>
+    <div class="explain-box" id="explain-box">
+      <div class="explain-icon" id="explain-icon"></div>
+      <div class="explain-title" id="explain-title"></div>
+      <div class="explain-text" id="explain-text"></div>
+    </div>
+    <button class="next-btn" id="next-btn" onclick="nextQuestion()">ΕΠΟΜΕΝΗ →</button>
+  </div>
+
+  <!-- ===== RESULTS SCREEN ===== -->
+  <div id="results-screen" class="screen">
+    <div class="glass results-card">
+      <div class="r-trophy" id="r-trophy">🏆</div>
+      <div class="r-title" id="r-title"></div>
+      <div class="r-sub" id="r-sub"></div>
+      <div class="stars-row" id="stars-row"></div>
+      <div class="badge" id="r-badge"></div>
+      <div class="new-record" id="new-record">🎉 Νέο Ρεκόρ!</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-val" id="s-score">0</div><div class="stat-lbl">Πόντοι</div></div>
+        <div class="stat-box"><div class="stat-val" id="s-correct">0</div><div class="stat-lbl">Σωστές</div></div>
+        <div class="stat-box"><div class="stat-val" id="s-streak">0</div><div class="stat-lbl">Μέγ. Σερί</div></div>
+      </div>
+      <div class="result-btns">
+        <button class="r-btn" onclick="resetGame()">ΠΑΙΞΕ ΞΑΝΑ 🔄</button>
+        <button class="r-btn secondary" onclick="showReview()">ΔΕΣ ΤΑ ΛΑΘΗ 📋</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== REVIEW SCREEN ===== -->
+  <div id="review-screen" class="screen">
+    <div class="glass" style="text-align:center">
+      <div class="title" style="font-size:1.4rem;margin-bottom:12px">📋 Ανασκόπηση</div>
+      <div class="review-list" id="review-list"></div>
+      <button class="r-btn" onclick="showScreen('results-screen')" style="margin-top:8px">← Πίσω</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+//  AUDIO ENGINE (Web Audio API — no external files)
+// ============================================================
+const AC = window.AudioContext || window.webkitAudioContext;
+let ac;
+function initAudio(){if(!ac)ac=new AC();if(ac.state==='suspended')ac.resume()}
+function tone(f,d,type='sine',v=.12){
+  initAudio();const o=ac.createOscillator(),g=ac.createGain();
+  o.type=type;o.frequency.setValueAtTime(f,ac.currentTime);
+  g.gain.setValueAtTime(v,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);
+  o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d);
+}
+function sndClick(){tone(880,.04,'sine',.1)}
+function sndNewRound(){[440,520,660].forEach((f,i)=>setTimeout(()=>tone(f,.12,'sine',.08),i*80))}
+function sndCorrect(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.14,'sine',.16),i*90))}
+function sndWrong(){tone(220,.25,'sawtooth',.08);setTimeout(()=>tone(160,.35,'sawtooth',.08),130)}
+function sndStreak(){[600,700,800,900,1000,1100,1200,1400].forEach((f,i)=>setTimeout(()=>tone(f,.1,'sine',.14),i*55))}
+function sndVictory(){
+  const n=[523,523,659,784,659,784,1047,1047,1318];
+  const d=[.12,.12,.15,.12,.15,.15,.2,.15,.4];
+  const t=[0,120,250,400,550,700,900,1100,1350];
+  n.forEach((f,i)=>setTimeout(()=>tone(f,d[i],'sine',.16),t[i]));
+}
+
+// ============================================================
+//  VISUAL EFFECTS
+// ============================================================
+const flash=document.getElementById('screen-flash');
+function screenFlash(cls){flash.className=cls;setTimeout(()=>flash.className='',300)}
+
+const SPARKLE_EMOJIS=['⚔️','🛡️','🏛️','⭐','🔥','🏆'];
+const CONFETTI_EMOJIS=['⚔️','🛡️','🏛️','⭐','🔥','🏆','🎉','✨'];
+
+function sparkleBurst(x,y,n=10){
+  for(let i=0;i<n;i++){
+    const s=document.createElement('div');s.className='sparkle';
+    s.textContent=SPARKLE_EMOJIS[Math.floor(Math.random()*SPARKLE_EMOJIS.length)];
+    const a=Math.PI*2*i/n+Math.random()*.4;
+    const dist=60+Math.random()*60;
+    s.style.cssText=`left:${x}px;top:${y}px;--sx:${Math.cos(a)*dist}px;--sy:${Math.sin(a)*dist}px;font-size:${1+Math.random()*.8}rem`;
+    document.body.appendChild(s);setTimeout(()=>s.remove(),1000);
+  }
+}
+
+function flipEmoji(x,y){
+  const e=document.createElement('div');e.className='flip-emoji';
+  e.textContent=['🏆','⚔️','🛡️','🏛️'][Math.floor(Math.random()*4)];
+  e.style.left=x+'px';e.style.top=y+'px';
+  document.body.appendChild(e);setTimeout(()=>e.remove(),1200);
+}
+
+function xpPopup(x,y,pts){
+  const e=document.createElement('div');e.className='xp-pop';
+  e.textContent='+'+pts;e.style.left=x+'px';e.style.top=y+'px';
+  document.body.appendChild(e);setTimeout(()=>e.remove(),1300);
+}
+
+function launchConfetti(count=50){
+  for(let i=0;i<count;i++){
+    setTimeout(()=>{
+      const c=document.createElement('div');c.className='confetti-piece';
+      c.textContent=CONFETTI_EMOJIS[Math.floor(Math.random()*CONFETTI_EMOJIS.length)];
+      const dur=2+Math.random()*2;
+      c.style.cssText=`left:${Math.random()*100}vw;top:-20px;--dur:${dur}s;--rot:${Math.random()*720-360}deg;animation-delay:${Math.random()*.3}s;font-size:${1+Math.random()*1}rem`;
+      document.body.appendChild(c);setTimeout(()=>c.remove(),(dur+.5)*1000);
+    },i*25);
+  }
+}
+
+// ============================================================
+//  BACKGROUND CANVAS (stars + floating shields)
+// ============================================================
+const cvs=document.getElementById('bg-canvas'),ctx=cvs.getContext('2d');
+let stars=[],floaters=[];
+function resizeCanvas(){cvs.width=window.innerWidth;cvs.height=window.innerHeight}
+window.addEventListener('resize',resizeCanvas);resizeCanvas();
+
+for(let i=0;i<120;i++)stars.push({x:Math.random()*cvs.width,y:Math.random()*cvs.height,r:Math.random()*1.8+.4,sp:Math.random()*1+.5,ph:Math.random()*Math.PI*2});
+for(let i=0;i<6;i++)floaters.push({x:Math.random()*cvs.width,y:Math.random()*cvs.height,emoji:['🛡️','⚔️','🏛️','🏺','🫒','🔱'][i],sz:20+Math.random()*16,sx:Math.random()*.3-.15,sy:Math.random()*.2-.1,rot:Math.random()*Math.PI*2,rsp:Math.random()*.01-.005});
+
+function drawBg(t){
+  ctx.clearRect(0,0,cvs.width,cvs.height);
+  stars.forEach(s=>{
+    const bright=.3+.5*Math.sin(t*.001*s.sp+s.ph);
+    ctx.fillStyle=`rgba(255,235,180,${bright})`;
+    ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();
+  });
+  floaters.forEach(f=>{
+    f.x+=f.sx;f.y+=f.sy;f.rot+=f.rsp;
+    if(f.x<-40)f.x=cvs.width+40;if(f.x>cvs.width+40)f.x=-40;
+    if(f.y<-40)f.y=cvs.height+40;if(f.y>cvs.height+40)f.y=-40;
+    ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.rot);ctx.globalAlpha=.12;
+    ctx.font=f.sz+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(f.emoji,0,0);ctx.restore();
+  });
+  requestAnimationFrame(drawBg);
+}
+requestAnimationFrame(drawBg);
+
+// ============================================================
+//  QUESTION BANK (28+ questions)
+// ============================================================
+const Q_CHAR=[
+  {type:'char',q:'Ποιος είναι αυτός ο αρχαίος πολεμιστής;',emoji:'🗡️👤',gradient:'linear-gradient(135deg,#2a4a8c,#1a3a5c)',detail:'Αθηναίος στρατηγός',hint:'Γνώριζε τον περσικό τρόπο μάχης...',hint2:'Το όνομά του σχετίζεται με τη μίλτο (κόκκινη γη)',options:['Θεμιστοκλής','Μιλτιάδης','Λεωνίδας','Περικλής'],correct:1,explanation:'Ο Μιλτιάδης ήταν ο Αθηναίος στρατηγός που οδήγησε τους Έλληνες στη νίκη στον Μαραθώνα.'},
+  {type:'char',q:'Ποιος βασιλιάς έστειλε στρατό κατά της Ελλάδας;',emoji:'👑🏹',gradient:'linear-gradient(135deg,#5c1a1a,#8b4513)',detail:'Βασιλιάς της Περσίας',hint:'Ήθελε εκδίκηση για την Ιωνική Επανάσταση...',hint2:'Ο γιος του θα επιτεθεί στις Θερμοπύλες 10 χρόνια αργότερα',options:['Ξέρξης','Κύρος','Δαρείος Α\'','Καμβύσης'],correct:2,explanation:'Ο Δαρείος Α\' ήθελε να τιμωρήσει την Αθήνα και την Ερέτρια για τη βοήθεια στην Ιωνική Επανάσταση.'},
+  {type:'char',q:'Ποιος έτρεξε 42 χλμ. για να φέρει το μήνυμα της νίκης;',emoji:'🏃💨',gradient:'linear-gradient(135deg,#2a5c2a,#4a8c4a)',detail:'Αγγελιοφόρος / Οπλίτης',hint:'Από εκείνο το τρέξιμο πήρε το όνομά του ένα αγώνισμα...',hint2:'Φώναξε "Νενικήκαμεν!" και μετά κατέρρευσε',options:['Φειδιππίδης','Μιλτιάδης','Καλλίμαχος','Αριστείδης'],correct:0,explanation:'Ο Φειδιππίδης έτρεξε από τον Μαραθώνα στην Αθήνα (~42 χλμ.) για να αναγγείλει τη νίκη.'},
+  {type:'char',q:'Ποιος ήταν ο Πολέμαρχος (αρχηγός) στον Μαραθώνα;',emoji:'🦅⚔️',gradient:'linear-gradient(135deg,#4a2a6a,#6a4a8a)',detail:'Ανώτατος στρατιωτικός αξιωματούχος',hint:'Σκοτώθηκε ηρωικά στη μάχη...',hint2:'Το αξίωμά του ήταν ο Πολέμαρχος — ψήφισε υπέρ της επίθεσης',options:['Μιλτιάδης','Αριστείδης','Καλλίμαχος','Θεμιστοκλής'],correct:2,explanation:'Ο Καλλίμαχος ήταν ο Πολέμαρχος που ψήφισε υπέρ της μάχης. Πολέμησε γενναία και σκοτώθηκε.'},
+  {type:'char',q:'Ποιος Πέρσης στρατηγός διοικούσε τον στρατό στον Μαραθώνα;',emoji:'🏹👳',gradient:'linear-gradient(135deg,#8b4513,#cd7f32)',detail:'Πέρσης στρατηγός',hint:'Δεν ήταν ο βασιλιάς, αλλά ο στρατηγός του...',hint2:'Το όνομά του ξεκινά με Δ — μαζί με τον Αρταφέρνη',options:['Μαρδόνιος','Δάτης','Αρτεμισία','Υδάρνης'],correct:1,explanation:'Ο Δάτης ήταν ο Πέρσης στρατηγός μαζί με τον Αρταφέρνη. Διοικούσαν τον περσικό στρατό στον Μαραθώνα.'},
+  {type:'char',q:'Ποιος πρώην τύραννος της Αθήνας οδηγούσε τους Πέρσες;',emoji:'🐍👤',gradient:'linear-gradient(135deg,#3a1a1a,#5a2a2a)',detail:'Πρώην τύραννος Αθηνών',hint:'Είχε εκδιωχθεί από την Αθήνα χρόνια πριν...',hint2:'Ήταν γιος του Πεισίστρατου — ήλπιζε να ξαναγίνει τύραννος',options:['Κλεισθένης','Ιππίας','Πεισίστρατος','Θρασύβουλος'],correct:1,explanation:'Ο Ιππίας, γιος του Πεισίστρατου, είχε εκδιωχθεί και συνόδευε τους Πέρσες ελπίζοντας να ξαναγίνει τύραννος.'},
+  {type:'char',q:'Ποιος ιστορικός μας περιέγραψε τη μάχη του Μαραθώνα;',emoji:'📜✍️',gradient:'linear-gradient(135deg,#5a4a2a,#8a7a4a)',detail:'Αρχαίος Ιστορικός',hint:'Θεωρείται ο "πατέρας" ενός τομέα της γνώσης...',hint2:'Τον αποκαλούν "Πατέρα της Ιστορίας" — από την Αλικαρνασσό',options:['Θουκυδίδης','Ηρόδοτος','Ξενοφώντας','Πλούταρχος'],correct:1,explanation:'Ο Ηρόδοτος, ο "Πατέρας της Ιστορίας", περιέγραψε τη μάχη στο έργο του «Ιστορίαι».'},
+  {type:'char',q:'Ποιοι ήταν οι μοναδικοί σύμμαχοι της Αθήνας;',emoji:'🤝🛡️',gradient:'linear-gradient(135deg,#2a4a2a,#4a6a4a)',detail:'Πόλη-σύμμαχος στη Βοιωτία',hint:'Μόνο μία πόλη έστειλε 1.000 στρατιώτες...',hint2:'Πόλη της Βοιωτίας — αρχίζει από Πλ...',options:['Σπαρτιάτες','Κορίνθιοι','Πλαταιείς','Θηβαίοι'],correct:2,explanation:'Οι Πλαταιείς έστειλαν 1.000 στρατιώτες. Ήταν οι μοναδικοί σύμμαχοι στον Μαραθώνα!'}
+];
+
+const Q_QUOTE=[
+  {type:'quote',q:'Ποιος φώναξε: «Νενικήκαμεν!»;',hint:'Έτρεξε 42 χλμ. χωρίς σταματημό...',hint2:'Ο αγγελιοφόρος που πέθανε μετά το μήνυμα',options:['Μιλτιάδης','Φειδιππίδης','Καλλίμαχος','Αριστείδης'],correct:1,explanation:'Ο Φειδιππίδης φώναξε "Νενικήκαμεν!" (Νικήσαμε!) φτάνοντας στην Αθήνα, πριν καταρρεύσει.'},
+  {type:'quote',q:'Ο Δαρείος ρώτησε: «Ποιοι είναι αυτοί οι Αθηναίοι;» — Γιατί;',hint:'Δεν τους θεωρούσε σημαντικούς...',hint2:'Η Αθήνα ήταν μικρή πόλη — ο Δαρείος δεν την ήξερε καν',options:['Ήθελε να μάθει τη δύναμή τους','Δεν γνώριζε καν την Αθήνα','Ήθελε ειρήνη','Ζητούσε συμμαχία'],correct:1,explanation:'Η Αθήνα ήταν τόσο μικρή που ο Δαρείος δεν την ήξερε. Ζήτησε ένα δούλο να του θυμίζει κάθε μέρα τους Αθηναίους!'},
+  {type:'quote',q:'Οι Πέρσες ζήτησαν «γη και ύδωρ» — Τι σήμαινε αυτό;',hint:'Ήταν συμβολική απαίτηση...',hint2:'Σήμαινε πλήρη υποταγή στον Μεγάλο Βασιλιά',options:['Εμπορική συμφωνία','Ανταλλαγή δώρων','Υποταγή στον Πέρση βασιλιά','Πρόσκληση σε γιορτή'],correct:2,explanation:'Το «γη και ύδωρ» ήταν σύμβολο υποταγής. Η Αθήνα και η Σπάρτη αρνήθηκαν!'},
+  {type:'quote',q:'Ο Μιλτιάδης είπε στον Καλλίμαχο: «Αν δεν πολεμήσουμε τώρα...» — Τι εννοούσε;',hint:'Η καθυστέρηση θα ήταν μοιραία...',hint2:'Φοβόταν ότι θα υπήρχε προδοσία αν περίμεναν',options:['Θα φύγουν οι Πέρσες','Η Αθήνα θα υποδουλωθεί','Θα χάσουμε τους συμμάχους','Οι θεοί θα θυμώσουν'],correct:1,explanation:'Ο Μιλτιάδης έπεισε τον Καλλίμαχο ότι έπρεπε να επιτεθούν αμέσως, αλλιώς η Αθήνα θα υποδουλωνόταν.'},
+  {type:'quote',q:'Ο Ηρόδοτος γράφει: «Πρώτοι μεταξύ Ελλήνων εκίνησαν δρόμω» — Τι σημαίνει;',hint:'Κάτι πρωτοφανές για εκείνη την εποχή...',hint2:'Οι Αθηναίοι έτρεξαν εναντίον των Περσών — κανείς δεν το είχε κάνει πριν',options:['Πρώτοι που αγωνίστηκαν σε αγώνες','Πρώτοι που επιτέθηκαν τρέχοντας κατά Περσών','Πρώτοι που έκαναν μαραθώνιο','Πρώτοι που χρησιμοποίησαν ιππικό'],correct:1,explanation:'Οι Αθηναίοι ήταν οι πρώτοι Έλληνες που τόλμησαν να τρέξουν εναντίον του περσικού στρατού!'}
+];
+
+const Q_PLOT=[
+  {type:'plot',q:'Σε ποιο μέρος έγινε η μάχη;',hint:'Βρίσκεται βορειοανατολικά της Αθήνας...',hint2:'Μια πεδιάδα κοντά στη θάλασσα — τώρα υπάρχει δήμος με αυτό το όνομα',options:['Θερμοπύλες','Σαλαμίνα','Μαραθώνας','Πλαταιές'],correct:2,explanation:'Η μάχη έγινε στην πεδιάδα του Μαραθώνα, βορειοανατολικά της Αττικής.'},
+  {type:'plot',q:'Πότε έγινε η μάχη του Μαραθώνα;',hint:'Δέκα χρόνια πριν τις Θερμοπύλες...',hint2:'Στα τέλη του 5ου αιώνα π.Χ. — 490 ακριβώς',options:['500 π.Χ.','490 π.Χ.','480 π.Χ.','470 π.Χ.'],correct:1,explanation:'Η μάχη έγινε τον Σεπτέμβριο του 490 π.Χ., στην αρχή των Περσικών Πολέμων.'},
+  {type:'plot',q:'Ποια ήταν η τακτική του Μιλτιάδη;',hint:'Δεν ήταν ίσα κατανεμημένη η γραμμή...',hint2:'Τα άκρα ήταν δυνατά, το κέντρο αδύναμο — για να κυκλώσει',options:['Νυχτερινή επίθεση','Δυνατά άκρα, αδύναμο κέντρο → περικύκλωση','Χρήση ιππικού','Πολιορκία'],correct:1,explanation:'Ο Μιλτιάδης ενίσχυσε τα άκρα. Όταν τα πλάγια νίκησαν, στράφηκαν και περικύκλωσαν το κέντρο!'},
+  {type:'plot',q:'Γιατί η Σπάρτη δεν βοήθησε εγκαίρως;',hint:'Κάτι θρησκευτικό τους εμπόδιζε...',hint2:'Γιόρταζαν τα Κάρνεια — δεν πολεμούσαν πριν την πανσέληνο',options:['Δεν ήξερε για τη μάχη','Θρησκευτική γιορτή (Κάρνεια)','Πολεμούσε αλλού','Αρνήθηκε βοήθεια'],correct:1,explanation:'Οι Σπαρτιάτες γιόρταζαν τα Κάρνεια και δεν εκστράτευαν πριν τη πανσέληνο. Έφτασαν μετά τη μάχη!'},
+  {type:'plot',q:'Πόσοι Αθηναίοι σκοτώθηκαν στη μάχη;',hint:'Λιγότεροι από 200...',hint2:'Ακριβώς 192 — ενώ οι Πέρσες έχασαν χιλιάδες',options:['~50','~192','~500','~1.000'],correct:1,explanation:'192 Αθηναίοι νεκροί έναντι ~6.400 Περσών! Θάφτηκαν στον Τύμβο του Μαραθώνα.'},
+  {type:'plot',q:'Τι σημαίνει η λέξη «Νενικήκαμεν»;',hint:'Είναι αρχαία ελληνική...',hint2:'Νε-νική-καμεν → "νίκη" + "εμείς" = "Έχουμε νικήσει!"',options:['Πολεμάμε!','Τρέξτε!','Έχουμε νικήσει!','Βοήθεια!'],correct:2,explanation:'«Νενικήκαμεν» σημαίνει «Έχουμε νικήσει!» στα αρχαία ελληνικά.'},
+  {type:'plot',q:'Από πού πήρε το όνομά του ο σημερινός Μαραθώνιος;',hint:'Σχετίζεται με μια φημισμένη διαδρομή...',hint2:'Από το τρέξιμο Μαραθώνας → Αθήνα μετά τη μάχη',options:['Από τον θεό Άρη','Από τη μάχη του Μαραθώνα','Από αρχαίο αγώνισμα','Από μια πόλη της Σπάρτης'],correct:1,explanation:'Ο Μαραθώνιος δρόμος (~42 χλμ.) πήρε το όνομά του από τη διαδρομή Μαραθώνας → Αθήνα.'},
+  {type:'plot',q:'Τι έκαναν οι Πέρσες μετά τη μάχη;',hint:'Δεν εγκατέλειψαν αμέσως...',hint2:'Προσπάθησαν να πλεύσουν γύρω γύρω στον Πειραιά πριν φτάσει ο στρατός',options:['Παραδόθηκαν','Έπλευσαν προς Αθήνα για νέα επίθεση','Υπέγραψαν ειρήνη','Πήγαν στη Σπάρτη'],correct:1,explanation:'Μετά την ήττα, ο περσικός στόλος έπλευσε προς τον Πειραιά, αλλά ο αθηναϊκός στρατός πρόλαβε να επιστρέψει!'}
+];
+
+const Q_TF=[
+  {type:'tf',q:'Οι Σπαρτιάτες πολέμησαν στη μάχη του Μαραθώνα.',hint:'Σκέψου τι τους εμπόδιζε...',hint2:'Τα Κάρνεια τους καθυστέρησαν — έφτασαν ΜΕΤΑ τη μάχη',correct:1,explanation:'ΨΕΜΑ! Η Σπάρτη έφτασε μετά τη μάχη λόγω της θρησκευτικής γιορτής Κάρνεια.'},
+  {type:'tf',q:'Ο σημερινός Μαραθώνιος δρόμος πήρε το όνομά του από αυτή τη μάχη.',hint:'Σκέψου τον αγγελιοφόρο...',hint2:'Φειδιππίδης, Μαραθώνας → Αθήνα, ~42 χλμ.',correct:0,explanation:'ΑΛΗΘΕΙΑ! Ο Μαραθώνιος δρόμος (~42 χλμ.) ονομάστηκε από τη διαδρομή του Φειδιππίδη.'},
+  {type:'tf',q:'Η Αθήνα είχε 50.000 στρατιώτες στον Μαραθώνα.',hint:'Η Αθήνα ήταν σε μειονέκτημα...',hint2:'Μόνο ~10.000 Αθηναίοι + 1.000 Πλαταιείς = 11.000',correct:1,explanation:'ΨΕΜΑ! Η Αθήνα είχε μόνο ~10.000 στρατιώτες, συν 1.000 Πλαταιείς.'},
+  {type:'tf',q:'Ο Τύμβος του Μαραθώνα υπάρχει ακόμα σήμερα.',hint:'Είναι αρχαιολογικός χώρος...',hint2:'Ναι, μπορείς να τον επισκεφθείς στον δήμο Μαραθώνα!',correct:0,explanation:'ΑΛΗΘΕΙΑ! Ο Τύμβος υπάρχει σήμερα στον Μαραθώνα. 192 Αθηναίοι θάφτηκαν εκεί.'},
+  {type:'tf',q:'Ο Ιππίας ήταν Πέρσης στρατηγός.',hint:'Τι σχέση είχε με την Αθήνα;',hint2:'Ήταν πρώην ΤΥΡΑΝΝΟΣ της Αθήνας — εκδιώχθηκε πριν',correct:1,explanation:'ΨΕΜΑ! Ο Ιππίας ήταν πρώην τύραννος της Αθήνας, όχι Πέρσης. Οδηγούσε τους Πέρσες ελπίζοντας να ξαναπάρει την εξουσία.'},
+  {type:'tf',q:'Η μάχη του Μαραθώνα κράτησε πολλές μέρες.',hint:'Ήταν σύντομη ή μακρά;',hint2:'Η ίδια η σύγκρουση ήταν γρήγορη — μία μέρα',correct:1,explanation:'ΨΕΜΑ! Η ίδια η μάχη ήταν σύντομη, μίας ημέρας. Η αναμονή πριν τη μάχη κράτησε μερικές μέρες.'},
+  {type:'tf',q:'Μετά τη μάχη, οι Πέρσες εγκατέλειψαν τα σχέδιά τους αμέσως.',hint:'Δεν τα παράτησαν τόσο εύκολα...',hint2:'Ο στόλος τους έπλευσε προς τον Πειραιά μετά την ήττα',correct:1,explanation:'ΨΕΜΑ! Ο περσικός στόλος προσπάθησε να επιτεθεί στην Αθήνα, αλλά ο στρατός πρόλαβε να γυρίσει!'}
+];
+
+// ============================================================
+//  GAME STATE
+// ============================================================
+let player='';
+let gameQs=[]; // 15 picked questions
+let qi=0;
+let score=0,streak=0,maxStreak=0,correctCount=0;
+let hintUsed=false;
+let timerInterval=null,timeLeft=100;
+const TIMER_MS=20000;
+let history=[]; // {q,yourAnswer,correctAnswer,correct,explanation}
+let answered=false;
+
+// ============================================================
+//  SHUFFLE & PICK
+// ============================================================
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+function pickQuestions(){
+  const chars=shuffle([...Q_CHAR]).slice(0,5);
+  const quotes=shuffle([...Q_QUOTE]).slice(0,3);
+  const plots=shuffle([...Q_PLOT]).slice(0,4);
+  const tfs=shuffle([...Q_TF]).slice(0,3);
+  return shuffle([...chars,...quotes,...plots,...tfs]);
+}
+
+// ============================================================
+//  SCREENS
+// ============================================================
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ============================================================
+//  PLAYER SELECTION
+// ============================================================
+function selectPlayer(name){
+  sndClick();
+  player=name;
+  document.querySelectorAll('.player-btn').forEach(b=>{
+    b.classList.toggle('selected',b.dataset.player===name);
+  });
+  document.getElementById('start-btn').classList.add('enabled');
+  updateHighscoreDisplay();
+}
+
+function getHSKey(){return 'machi-marathona-highscore-'+player}
+function getHighscore(){return parseInt(localStorage.getItem(getHSKey())||'0')}
+function setHighscore(v){localStorage.setItem(getHSKey(),v)}
+
+function updateHighscoreDisplay(){
+  const hs=getHighscore();
+  const box=document.getElementById('highscore-box');
+  box.innerHTML=hs>0?`Ρεκόρ ${player}: <span>${hs}</span> πόντοι`:'';
+}
+
+// ============================================================
+//  START GAME
+// ============================================================
+function startGame(){
+  if(!player)return;
+  sndClick();setTimeout(()=>sndNewRound(),200);
+  gameQs=pickQuestions();
+  qi=0;score=0;streak=0;maxStreak=0;correctCount=0;history=[];
+  updateHUD();
+  showScreen('quiz-screen');
+  loadQuestion();
+}
+
+// ============================================================
+//  LOAD QUESTION
+// ============================================================
+function loadQuestion(){
+  answered=false;hintUsed=false;
+  const q=gameQs[qi];
+
+  // Badge
+  const badgeMap={char:'ΧΑΡΑΚΤΗΡΑΣ',quote:'ΑΤΑΚΑ',plot:'ΙΣΤΟΡΙΑ',tf:'ΑΛΗΘΕΙΑ / ΨΕΜΑ'};
+  document.getElementById('q-badge').textContent=badgeMap[q.type]||'ΙΣΤΟΡΙΑ';
+
+  // Character portrait
+  const portrait=document.getElementById('char-portrait');
+  const detail=document.getElementById('char-detail');
+  if(q.type==='char'){
+    portrait.style.display='block';portrait.textContent=q.emoji;
+    detail.style.display='inline-block';detail.textContent=q.detail;
+  } else {
+    portrait.style.display='none';detail.style.display='none';
+  }
+
+  // Question text
+  document.getElementById('q-text').textContent=q.q;
+
+  // Options
+  const grid=document.getElementById('options');grid.innerHTML='';
+  const letters=['Α','Β','Γ','Δ'];
+
+  if(q.type==='tf'){
+    ['Αλήθεια ✅','Ψέμα ❌'].forEach((label,i)=>{
+      const btn=document.createElement('button');
+      btn.className='opt-btn tf-btn';
+      btn.innerHTML=`<span>${label}</span>`;
+      btn.onclick=e=>answer(i,e);
+      grid.appendChild(btn);
+    });
+  } else {
+    q.options.forEach((opt,i)=>{
+      const btn=document.createElement('button');
+      btn.className='opt-btn';
+      btn.innerHTML=`<span class="opt-letter">${letters[i]}</span><span>${opt}</span>`;
+      btn.onclick=e=>answer(i,e);
+      grid.appendChild(btn);
+    });
+  }
+
+  // Reset hint, explain, next
+  document.getElementById('hint-btn').classList.remove('used');
+  document.getElementById('hint-btn').style.display='';
+  document.getElementById('hint-row').style.display='flex';
+  document.getElementById('hint-box').classList.remove('show');
+  document.getElementById('hint-box').textContent='';
+  document.getElementById('explain-box').classList.remove('show','correct-explain','wrong-explain');
+  document.getElementById('next-btn').classList.remove('show');
+
+  updateHUD();
+  startTimer();
+  sndNewRound();
+}
+
+// ============================================================
+//  HINT
+// ============================================================
+function useHint(){
+  if(hintUsed||answered)return;
+  hintUsed=true;sndClick();
+  const q=gameQs[qi];
+  document.getElementById('hint-box').textContent='💡 '+q.hint2;
+  document.getElementById('hint-box').classList.add('show');
+  document.getElementById('hint-btn').classList.add('used');
+}
+
+// ============================================================
+//  TIMER
+// ============================================================
+function startTimer(){
+  clearInterval(timerInterval);timeLeft=100;
+  const bar=document.getElementById('timer-fill');
+  bar.style.width='100%';bar.style.background='linear-gradient(90deg,#4caf50,#8bc34a)';
+  const step=100/(TIMER_MS/50);
+  timerInterval=setInterval(()=>{
+    timeLeft-=step;
+    const pct=Math.max(0,timeLeft);
+    bar.style.width=pct+'%';
+    if(pct>60)bar.style.background='linear-gradient(90deg,#4caf50,#8bc34a)';
+    else if(pct>30)bar.style.background='linear-gradient(90deg,#ffeb3b,#ff9800)';
+    else bar.style.background='linear-gradient(90deg,#ff9800,#f44336)';
+    if(timeLeft<=0){clearInterval(timerInterval);timeUp()}
+  },50);
+}
+
+function timeUp(){
+  if(answered)return;
+  answered=true;
+  const q=gameQs[qi];
+  const btns=document.querySelectorAll('.opt-btn');
+  const correctIdx=q.correct;
+
+  btns.forEach((btn,i)=>{
+    btn.classList.add('locked');
+    if(q.type==='tf'){if(i===correctIdx)btn.classList.add('correct')}
+    else{if(i===correctIdx)btn.classList.add('correct')}
+  });
+
+  streak=0;
+  sndWrong();screenFlash('flash-red');
+
+  history.push({q:q.q,yourAnswer:'⏰ Τέλος χρόνου',correctAnswer:q.type==='tf'?(correctIdx===0?'Αλήθεια':'Ψέμα'):q.options[correctIdx],correct:false,explanation:q.explanation});
+
+  showExplain(false,q.explanation);
+  document.getElementById('next-btn').classList.add('show');
+  document.getElementById('next-btn').textContent=qi<gameQs.length-1?'ΕΠΟΜΕΝΗ →':'ΑΠΟΤΕΛΕΣΜΑΤΑ 🏆';
+  updateHUD();
+}
+
+// ============================================================
+//  ANSWER
+// ============================================================
+function answer(idx,event){
+  if(answered)return;
+  answered=true;sndClick();
+  clearInterval(timerInterval);
+
+  const q=gameQs[qi];
+  const isCorrect=idx===q.correct;
+  const btns=document.querySelectorAll('.opt-btn');
+
+  btns.forEach((btn,i)=>{
+    btn.classList.add('locked');
+    if(q.type==='tf'){
+      if(i===q.correct)btn.classList.add('correct');
+      if(i===idx&&!isCorrect)btn.classList.add('wrong');
+    } else {
+      if(i===q.correct)btn.classList.add('correct');
+      if(i===idx&&!isCorrect)btn.classList.add('wrong');
+    }
+  });
+
+  // Determine answer text for history
+  let yourAnswerText,correctAnswerText;
+  if(q.type==='tf'){
+    yourAnswerText=idx===0?'Αλήθεια':'Ψέμα';
+    correctAnswerText=q.correct===0?'Αλήθεια':'Ψέμα';
+  } else {
+    yourAnswerText=q.options[idx];
+    correctAnswerText=q.options[q.correct];
+  }
+
+  if(isCorrect){
+    correctCount++;streak++;if(streak>maxStreak)maxStreak=streak;
+    const timeBonus=Math.floor(timeLeft/10);
+    const streakMult=streak>=3?2:1;
+    const basePoints=hintUsed?5:10;
+    const pts=(basePoints+timeBonus)*streakMult;
+    score+=pts;
+
+    sndCorrect();if(streak>=3){sndStreak();screenFlash('flash-gold')}else screenFlash('flash-green');
+
+    const rect=btns[q.type==='tf'?idx:idx].getBoundingClientRect();
+    const cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+    sparkleBurst(cx,cy,12);flipEmoji(cx,cy);xpPopup(cx-16,rect.top-8,pts);
+  } else {
+    streak=0;
+    sndWrong();screenFlash('flash-red');
+    document.getElementById('app').classList.add('screen-shake');
+    setTimeout(()=>document.getElementById('app').classList.remove('screen-shake'),400);
+  }
+
+  history.push({q:q.q,yourAnswer:yourAnswerText,correctAnswer:correctAnswerText,correct:isCorrect,explanation:q.explanation});
+
+  showExplain(isCorrect,q.explanation);
+  document.getElementById('next-btn').classList.add('show');
+  document.getElementById('next-btn').textContent=qi<gameQs.length-1?'ΕΠΟΜΕΝΗ →':'ΑΠΟΤΕΛΕΣΜΑΤΑ 🏆';
+  document.getElementById('hint-row').style.display='none';
+  updateHUD();
+}
+
+// ============================================================
+//  EXPLAIN BOX
+// ============================================================
+function showExplain(correct,text){
+  const box=document.getElementById('explain-box');
+  box.classList.remove('correct-explain','wrong-explain');
+  box.classList.add('show',correct?'correct-explain':'wrong-explain');
+  document.getElementById('explain-icon').textContent=correct?'🎉':'💡';
+  document.getElementById('explain-title').textContent=correct?'Σωστά!':'Η σωστή απάντηση:';
+  document.getElementById('explain-title').style.color=correct?'var(--correct)':'var(--wrong)';
+  document.getElementById('explain-text').textContent=text;
+}
+
+// ============================================================
+//  NEXT
+// ============================================================
+function nextQuestion(){
+  sndClick();qi++;
+  if(qi>=gameQs.length){showResults();return}
+  loadQuestion();
+}
+
+// ============================================================
+//  HUD
+// ============================================================
+function updateHUD(){
+  const sv=document.getElementById('hud-score');
+  sv.textContent=score;sv.classList.add('pop');setTimeout(()=>sv.classList.remove('pop'),350);
+  document.getElementById('hud-streak-val').textContent=streak;
+  const sd=document.getElementById('hud-streak');
+  if(streak>=3)sd.classList.add('fire');else sd.classList.remove('fire');
+  document.getElementById('hud-qnum').textContent=`${Math.min(qi+1,gameQs.length)}/${gameQs.length}`;
+
+  const pct=(qi/gameQs.length)*100;
+  document.getElementById('progress-fill').style.width=pct+'%';
+  const rider=document.getElementById('progress-rider');
+  rider.style.left=`calc(${pct}% - 14px)`;
+}
+
+// ============================================================
+//  RESULTS
+// ============================================================
+function showResults(){
+  showScreen('results-screen');
+  const pct=correctCount/gameQs.length;
+  let trophy,title,sub,badge;
+
+  if(pct>=.9){trophy='👑';title='ΤΕΛΕΙΟ, '+player+'!';sub='Είσαι ο νέος Μιλτιάδης!';badge='👑 ΑΡΧΙΣΤΡΑΤΗΓΟΣ'}
+  else if(pct>=.7){trophy='🏆';title='Εξαιρετικά, '+player+'!';sub='Γνωρίζεις πολύ καλά τον Μαραθώνα!';badge='🏆 ΣΤΡΑΤΗΓΟΣ'}
+  else if(pct>=.5){trophy='🥈';title='Πολύ καλά, '+player+'!';sub='Σαν γενναίος Αθηναίος οπλίτης!';badge='🛡️ ΟΠΛΙΤΗΣ'}
+  else if(pct>=.3){trophy='🥉';title='Καλή προσπάθεια!';sub='Διάβασε λίγο ακόμα, '+player+'!';badge='⚔️ ΔΟΚΙΜΟΣ'}
+  else{trophy='📚';title='Πάμε ξανά!';sub='Με λίγο διάβασμα θα τα καταφέρεις!';badge='📖 ΜΑΘΗΤΗΣ'}
+
+  document.getElementById('r-trophy').textContent=trophy;
+  document.getElementById('r-title').textContent=title;
+  document.getElementById('r-sub').textContent=sub;
+  document.getElementById('r-badge').textContent=badge;
+  document.getElementById('s-score').textContent=score;
+  document.getElementById('s-correct').textContent=correctCount+'/'+gameQs.length;
+  document.getElementById('s-streak').textContent=maxStreak;
+
+  // Stars: 9+=3, 7+=2, 4+=1
+  const starsN=correctCount>=9?3:correctCount>=7?2:correctCount>=4?1:0;
+  const sr=document.getElementById('stars-row');sr.innerHTML='';
+  for(let i=0;i<3;i++){
+    const s=document.createElement('span');
+    s.className='star-item '+(i<starsN?'earned':'empty');
+    s.textContent='⭐';s.style.animationDelay=i*.3+'s';
+    sr.appendChild(s);
+  }
+
+  // Highscore
+  const hs=getHighscore();
+  const nr=document.getElementById('new-record');
+  if(score>hs){setHighscore(score);nr.classList.add('show')}else{nr.classList.remove('show')}
+
+  // Effects
+  if(pct>=.6){sndVictory();setTimeout(()=>launchConfetti(pct>=.9?80:40),500)}
+}
+
+// ============================================================
+//  REVIEW
+// ============================================================
+function showReview(){
+  showScreen('review-screen');
+  const list=document.getElementById('review-list');list.innerHTML='';
+  history.forEach((h,i)=>{
+    const div=document.createElement('div');
+    div.className='review-item glass '+(h.correct?'was-correct':'was-wrong');
+    div.innerHTML=`
+      <div class="review-q">${i+1}. ${h.q}</div>
+      <div class="review-answers">
+        ${h.correct?'':`<div class="review-your">Η απάντησή σου: ${h.yourAnswer}</div>`}
+        <div class="review-correct-ans">Σωστή απάντηση: ${h.correctAnswer}</div>
+      </div>
+      <div class="review-explain">${h.explanation}</div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+// ============================================================
+//  RESET
+// ============================================================
+function resetGame(){
+  sndClick();showScreen('start-screen');updateHighscoreDisplay();
+}
+
+</script>
+</body>
+</html>

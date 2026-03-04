@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Γεωγραφία - Τεστ για τον Αίαντα</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #0c1445 0%, #1a237e 50%, #0d47a1 100%);
+    min-height: 100vh;
+    color: #fff;
+    overflow-x: hidden;
+  }
+  .header { text-align: center; padding: 16px 10px 6px; }
+  .header h1 { font-size: 1.7em; margin-bottom: 3px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+  .header p { font-size: 0.95em; opacity: 0.85; }
+  .tabs { display: flex; justify-content: center; gap: 10px; margin: 10px 0; }
+  .tab-btn {
+    padding: 10px 26px; border: 2px solid rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.1); color: #fff; border-radius: 30px;
+    font-size: 1.05em; cursor: pointer; transition: all 0.3s; font-weight: 600;
+  }
+  .tab-btn:hover { background: rgba(255,255,255,0.2); }
+  .tab-btn.active { background: #4CAF50; border-color: #4CAF50; box-shadow: 0 4px 15px rgba(76,175,80,0.4); }
+  .tab-btn.quiz-active { background: #FF9800; border-color: #FF9800; box-shadow: 0 4px 15px rgba(255,152,0,0.4); }
+
+  .map-container {
+    position: relative; max-width: 1000px; margin: 6px auto;
+    background: rgba(255,255,255,0.05); border-radius: 16px; padding: 8px;
+  }
+  #worldMap { width: 100%; height: auto; display: block; }
+
+  .continent-path {
+    cursor: pointer; transition: all 0.25s;
+    stroke: rgba(255,255,255,0.4); stroke-width: 0.5; stroke-linejoin: round;
+  }
+  .continent-path:hover { filter: brightness(1.25); stroke: #fff; stroke-width: 1.5; }
+  .continent-path.highlight { animation: pulse 1s ease-in-out infinite; stroke: #FFD700; stroke-width: 2; }
+  .continent-path.correct { filter: brightness(1.3); stroke: #4CAF50; stroke-width: 2.5; }
+  .continent-path.wrong { filter: brightness(0.5); stroke: #f44336; stroke-width: 2.5; }
+
+  .water-area { cursor: pointer; transition: all 0.3s; opacity: 0; }
+  .water-area:hover { opacity: 0.3; }
+  .water-area.highlight { animation: waterPulse 1s ease-in-out infinite; }
+  .water-area.correct { opacity: 0.35; fill: #4CAF50 !important; }
+  .water-area.wrong { opacity: 0.35; fill: #f44336 !important; }
+
+  @keyframes pulse { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.5)} }
+  @keyframes waterPulse { 0%,100%{opacity:0.1} 50%{opacity:0.45} }
+
+  .map-label { pointer-events: none; font-weight: 700; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+  .quiz-panel { text-align: center; padding: 12px; max-width: 700px; margin: 0 auto; }
+  .question { font-size: 1.5em; font-weight: 700; margin: 8px 0; min-height: 42px; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+  .score-bar { display: flex; justify-content: center; gap: 18px; font-size: 1.05em; margin: 8px 0; }
+  .score-bar span { padding: 4px 12px; border-radius: 15px; }
+  .score-correct { background: rgba(76,175,80,0.3); }
+  .score-wrong { background: rgba(244,67,54,0.3); }
+  .score-remaining { background: rgba(255,255,255,0.15); }
+  .feedback { font-size: 1.3em; min-height: 36px; font-weight: 600; margin: 4px 0; }
+  .feedback.correct-feedback { color: #69F0AE; }
+  .feedback.wrong-feedback { color: #FF5252; }
+  .restart-btn {
+    padding: 12px 30px; background: #4CAF50; color: #fff; border: none;
+    border-radius: 25px; font-size: 1.1em; cursor: pointer; margin-top: 10px;
+    display: none; font-weight: 600;
+  }
+  .restart-btn:hover { background: #388E3C; }
+  .results { text-align: center; padding: 30px; display: none; }
+  .results h2 { font-size: 2em; margin-bottom: 15px; }
+  .results .score-big { font-size: 4em; font-weight: 800; margin: 15px 0; }
+  .results .grade-msg { font-size: 1.4em; margin: 10px 0; }
+  .stars { font-size: 3em; margin: 10px 0; }
+  .study-list { max-width: 700px; margin: 10px auto; padding: 0 20px; display: none; }
+  .study-section {
+    background: rgba(255,255,255,0.08); border-radius: 15px;
+    padding: 12px 18px; margin-bottom: 10px;
+  }
+  .study-section h3 { font-size: 1.1em; margin-bottom: 6px; color: #64B5F6; }
+  .study-section ul { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
+  .study-section li { background: rgba(255,255,255,0.12); padding: 5px 12px; border-radius: 20px; font-size: 0.95em; }
+  .continent-color { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+  .progress-container { max-width: 400px; margin: 8px auto; height: 6px; background: rgba(255,255,255,0.15); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #4CAF50, #81C784); border-radius: 3px; transition: width 0.5s; width: 0%; }
+  #loading { text-align: center; padding: 80px 20px; font-size: 1.3em; opacity: 0.7; }
+
+  /* Confetti & celebration */
+  .confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; overflow: hidden; }
+  .confetti {
+    position: absolute; top: -20px; width: 12px; height: 12px; opacity: 0.9;
+    animation: confettiFall linear forwards;
+  }
+  @keyframes confettiFall {
+    0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: translateY(105vh) rotate(720deg) scale(0.5); opacity: 0; }
+  }
+  .trophy { font-size: 6em; animation: trophyBounce 0.8s ease-out; }
+  @keyframes trophyBounce {
+    0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+    50% { transform: scale(1.3) rotate(5deg); opacity: 1; }
+    70% { transform: scale(0.9) rotate(-3deg); }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+  .prize-msg {
+    font-size: 1.8em; font-weight: 800; margin: 15px 0;
+    background: linear-gradient(90deg, #FFD700, #FFA000, #FFD700);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: prizeGlow 2s ease-in-out infinite;
+  }
+  @keyframes prizeGlow {
+    0%,100% { filter: brightness(1); }
+    50% { filter: brightness(1.3); }
+  }
+  .perfect-subtitle {
+    font-size: 1.2em; opacity: 0.9; margin: 8px 0;
+    animation: fadeInUp 0.8s ease-out 0.5s both;
+  }
+  @keyframes fadeInUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 0.9; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Γεωγραφία - Ήπειροι, Ωκεανοί & Θάλασσες</h1>
+  <p>Τεστ προετοιμασίας για τον Αίαντα</p>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="setMode('study')">Μελέτη</button>
+  <button class="tab-btn" onclick="setMode('quiz')">Κουίζ</button>
+</div>
+
+<div class="study-list" id="studyList">
+  <div class="study-section">
+    <h3>Ήπειροι (5)</h3>
+    <ul>
+      <li><span class="continent-color" style="background:#4CAF50"></span>Ευρώπη</li>
+      <li><span class="continent-color" style="background:#FF9800"></span>Ασία</li>
+      <li><span class="continent-color" style="background:#E53935"></span>Αφρική</li>
+      <li><span class="continent-color" style="background:#AB47BC"></span>Αμερική</li>
+      <li><span class="continent-color" style="background:#00ACC1"></span>Ωκεανία</li>
+    </ul>
+  </div>
+  <div class="study-section">
+    <h3>Ωκεανοί (3)</h3>
+    <ul><li>Ειρηνικός Ωκεανός</li><li>Ατλαντικός Ωκεανός</li><li>Ινδικός Ωκεανός</li></ul>
+  </div>
+  <div class="study-section">
+    <h3>Θάλασσες (4)</h3>
+    <ul>
+      <li>Μεσόγειος Θάλασσα</li>
+      <li>Μαύρη Θάλασσα (Εύξεινος Πόντος)</li>
+      <li>Βόρεια Θάλασσα</li>
+      <li>Αραβική Θάλασσα</li>
+    </ul>
+  </div>
+</div>
+
+<div class="quiz-panel" id="quizPanel" style="display:none;">
+  <div class="question" id="question"></div>
+  <div class="progress-container"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="score-bar">
+    <span class="score-correct" id="scoreCorrect">Σωστά: 0</span>
+    <span class="score-wrong" id="scoreWrong">Λάθος: 0</span>
+    <span class="score-remaining" id="scoreRemaining">Απομένουν: 12</span>
+  </div>
+  <div class="feedback" id="feedback"></div>
+  <button class="restart-btn" id="restartBtn" onclick="startQuiz()">Ξανά από την αρχή!</button>
+</div>
+
+<div class="results" id="results">
+  <div id="perfectResult" style="display:none">
+    <div class="trophy">🏆</div>
+    <div class="prize-msg">Μπράβο Αίαντα!</div>
+    <div class="prize-msg" style="font-size:1.4em">Τώρα είσαι έτοιμος!</div>
+    <div class="perfect-subtitle">12/12 — Κανένα λάθος!</div>
+    <div class="stars">⭐⭐⭐⭐⭐</div>
+    <div class="perfect-subtitle" style="animation-delay:0.8s">Ο γεωγράφος του σπιτιού!</div>
+  </div>
+  <div id="normalResult">
+    <h2>Αποτέλεσμα!</h2>
+    <div class="score-big" id="scoreBig"></div>
+    <div class="stars" id="starsDisplay"></div>
+    <div class="grade-msg" id="gradeMsg"></div>
+  </div>
+  <button class="restart-btn" style="display:inline-block" onclick="startQuiz()">Δοκίμασε ξανά!</button>
+</div>
+<div class="confetti-container" id="confettiContainer"></div>
+
+<div class="map-container" id="mapContainer">
+  <div id="loading">Φορτώνει ο χάρτης...</div>
+  <svg id="worldMap" style="display:none"></svg>
+</div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+<script>
+// ============ CONTINENT MAPPING (ISO 3166-1 numeric → continent) ============
+const CM = {};
+// Africa
+[12,24,72,108,120,132,140,148,174,178,180,204,226,231,232,262,266,270,288,324,384,404,426,430,434,450,454,466,478,480,504,508,516,562,566,624,646,678,686,690,694,706,710,716,728,729,732,736,748,768,788,800,834,854,894].forEach(c => CM[c] = 'africa');
+// Americas
+[28,32,44,52,60,68,76,84,124,152,170,188,192,212,214,218,222,254,304,308,312,320,328,332,340,388,474,484,500,531,533,534,535,558,591,600,604,630,652,659,660,662,663,670,740,780,796,840,850,858,862].forEach(c => CM[c] = 'america');
+// Asia
+[4,31,48,50,51,64,96,104,116,144,156,158,268,275,356,360,364,368,376,392,398,400,408,410,414,417,418,422,446,458,462,496,512,524,586,608,626,634,643,682,702,760,762,764,792,795,784,860,704,887].forEach(c => CM[c] = 'asia');
+// Europe
+[8,20,40,56,70,100,112,191,196,203,208,233,234,246,250,276,292,300,336,348,352,372,380,428,438,440,442,470,492,498,499,528,578,616,620,642,674,680,688,703,705,724,744,752,756,804,807,826,831,832,833].forEach(c => CM[c] = 'europe');
+// Oceania
+[36,90,242,296,316,520,540,548,554,570,580,583,584,585,598,612,772,776,798,876,882].forEach(c => CM[c] = 'oceania');
+
+function getContinent(id) {
+  const n = parseInt(id, 10);
+  return CM[n] || null;
+}
+
+const COLORS = { europe:'#4CAF50', asia:'#FF9800', africa:'#E53935', america:'#AB47BC', oceania:'#00ACC1' };
+const W = 960, H = 500;
+
+const items = [
+  { id:'europe', name:'Ευρώπη', type:'continent' },
+  { id:'asia', name:'Ασία', type:'continent' },
+  { id:'africa', name:'Αφρική', type:'continent' },
+  { id:'america', name:'Αμερική', type:'continent' },
+  { id:'oceania', name:'Ωκεανία', type:'continent' },
+  { id:'pacific', name:'Ειρηνικός Ωκεανός', type:'ocean' },
+  { id:'atlantic', name:'Ατλαντικός Ωκεανός', type:'ocean' },
+  { id:'indian', name:'Ινδικός Ωκεανός', type:'ocean' },
+  { id:'mediterranean', name:'Μεσόγειος Θάλασσα', type:'sea' },
+  { id:'blacksea', name:'Μαύρη Θάλασσα (Εύξεινος Πόντος)', type:'sea' },
+  { id:'northsea', name:'Βόρεια Θάλασσα', type:'sea' },
+  { id:'arabian', name:'Αραβική Θάλασσα', type:'sea' },
+];
+
+let mode = 'study', quizItems = [], currentIndex = 0, correct = 0, wrong = 0, answered = false;
+
+// ============ BUILD MAP ============
+const projection = d3.geoNaturalEarth1().scale(153).translate([W/2, H/2]);
+const pathGen = d3.geoPath(projection);
+
+d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(world => {
+  document.getElementById("loading").style.display = "none";
+  const svg = d3.select("#worldMap").attr("viewBox", `0 0 ${W} ${H}`).style("display","block");
+
+  // 1. Globe / ocean background
+  svg.append("path").datum({type:"Sphere"}).attr("d", pathGen).attr("fill","#1565C0").attr("stroke","#0D47A1").attr("stroke-width",1);
+
+  // 2. Graticule
+  svg.append("path").datum(d3.geoGraticule10()).attr("d", pathGen)
+    .attr("fill","none").attr("stroke","rgba(255,255,255,0.07)").attr("stroke-width",0.4);
+
+  // 3. Ocean click areas (behind continents)
+  const oceanAreas = [
+    { id:'pacific', coords:[[-180,70],[-100,70],[-100,-70],[-180,-70]] },
+    { id:'pacific', coords:[[140,70],[180,70],[180,-70],[140,-70]] },
+    { id:'atlantic', coords:[[-90,70],[-5,70],[-5,-70],[-90,-70]] },
+    { id:'indian', coords:[[25,30],[120,30],[120,-70],[25,-70]] },
+  ];
+  for (const oa of oceanAreas) {
+    const ring = oa.coords.map(c => projection(c));
+    svg.append("polygon")
+      .attr("points", ring.map(p=>p.join(",")).join(" "))
+      .attr("class","water-area").attr("data-id", oa.id).attr("fill","#64B5F6");
+  }
+
+  // 4. Continents (merged from countries — real cartographic data!)
+  const continentIds = ['africa','america','asia','europe','oceania'];
+  for (const cid of continentIds) {
+    const geoms = world.objects.countries.geometries.filter(g => getContinent(g.id) === cid);
+    if (!geoms.length) continue;
+    const merged = topojson.merge(world, geoms);
+    svg.append("path").datum(merged).attr("d", pathGen)
+      .attr("fill", COLORS[cid])
+      .attr("class","continent-path")
+      .attr("data-id", cid)
+      .on("click", () => handleClick(cid));
+  }
+
+  // 5. Sea click areas (on top, in water gaps)
+  const seas = [
+    { id:'mediterranean', pos:[18,36], rx:45, ry:8 },
+    { id:'blacksea', pos:[35,43.5], rx:18, ry:6 },
+    { id:'northsea', pos:[4,57], rx:12, ry:14 },
+    { id:'arabian', pos:[65,14], rx:22, ry:18 },
+  ];
+  for (const s of seas) {
+    const p = projection(s.pos);
+    svg.append("ellipse").attr("cx",p[0]).attr("cy",p[1]).attr("rx",s.rx).attr("ry",s.ry)
+      .attr("class","water-area").attr("data-id",s.id).attr("fill","#64B5F6");
+  }
+
+  // 6. Labels
+  const labelG = svg.append("g").attr("id","labels");
+
+  // Continent labels
+  const cLabels = [
+    {text:'ΑΜΕΡΙΚΗ', pos:[-95,15], size:14},
+    {text:'ΕΥΡΩΠΗ', pos:[15,52], size:11},
+    {text:'ΑΣΙΑ', pos:[85,45], size:14},
+    {text:'ΑΦΡΙΚΗ', pos:[20,-2], size:13},
+    {text:'ΩΚΕΑΝΙΑ', pos:[135,-25], size:11},
+  ];
+  for (const l of cLabels) {
+    const p = projection(l.pos);
+    // Shadow
+    labelG.append("text").attr("x",p[0]).attr("y",p[1]).attr("text-anchor","middle")
+      .attr("font-size",l.size).attr("fill","none").attr("stroke","rgba(0,0,0,0.7)")
+      .attr("stroke-width",3).attr("class","map-label label").text(l.text);
+    // Text
+    labelG.append("text").attr("x",p[0]).attr("y",p[1]).attr("text-anchor","middle")
+      .attr("font-size",l.size).attr("fill","#fff")
+      .attr("class","map-label label").text(l.text);
+  }
+
+  // Ocean labels
+  const oLabels = [
+    {lines:['ΕΙΡΗΝΙΚΟΣ','ΩΚΕΑΝΟΣ'], pos:[-155,-5]},
+    {lines:['ΕΙΡΗΝΙΚΟΣ','ΩΚΕΑΝΟΣ'], pos:[165,-15], size:10},
+    {lines:['ΑΤΛΑΝΤΙΚΟΣ','ΩΚΕΑΝΟΣ'], pos:[-35,-8]},
+    {lines:['ΙΝΔΙΚΟΣ','ΩΚΕΑΝΟΣ'], pos:[75,-30]},
+  ];
+  for (const l of oLabels) {
+    const p = projection(l.pos);
+    const sz = l.size || 11;
+    l.lines.forEach((line,i) => {
+      labelG.append("text").attr("x",p[0]).attr("y",p[1]+i*15).attr("text-anchor","middle")
+        .attr("font-size",sz).attr("fill","#90CAF9").attr("font-style","italic")
+        .attr("class","map-label label").text(line);
+    });
+  }
+
+  // Sea labels with dot markers
+  const sLabels = [
+    {lines:['ΜΕΣΟΓΕΙΟΣ ΘΑΛΑΣΣΑ'], pos:[18,34], dy:12},
+    {lines:['ΜΑΥΡΗ ΘΑΛΑΣΣΑ','(ΕΥΞΕΙΝΟΣ ΠΟΝΤΟΣ)'], pos:[35,44.5], dy:-8, sizes:[9,7]},
+    {lines:['ΒΟΡΕΙΑ','ΘΑΛΑΣΣΑ'], pos:[4,58], dy:-8, sizes:[9,9]},
+    {lines:['ΑΡΑΒΙΚΗ','ΘΑΛΑΣΣΑ'], pos:[65,12], dy:12, sizes:[9,9]},
+  ];
+  for (const l of sLabels) {
+    const p = projection(l.pos);
+    labelG.append("circle").attr("cx",p[0]).attr("cy",p[1]).attr("r",3.5)
+      .attr("fill","#FFD54F").attr("opacity",0.9).attr("class","map-label label");
+    l.lines.forEach((line,i) => {
+      const sz = l.sizes ? l.sizes[i] : 9;
+      labelG.append("text").attr("x",p[0]).attr("y",p[1]+l.dy+i*11).attr("text-anchor","middle")
+        .attr("font-size",sz).attr("fill","#FFD54F")
+        .attr("class","map-label label").text(line);
+    });
+  }
+
+  // Click handlers for water areas
+  svg.selectAll(".water-area").on("click", function() { handleClick(d3.select(this).attr("data-id")); });
+
+  // Initialize
+  setMode('study');
+
+}).catch(err => {
+  document.getElementById("loading").innerHTML = "Σφάλμα φόρτωσης χάρτη.<br>Ελέγξτε τη σύνδεση στο internet.";
+  console.error("Map load error:", err);
+});
+
+// ============ QUIZ LOGIC ============
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.remove('active','quiz-active');
+    if (i===0 && m==='study') b.classList.add('active');
+    if (i===1 && m==='quiz') b.classList.add('quiz-active');
+  });
+  document.getElementById('studyList').style.display = m==='study'?'block':'none';
+  document.getElementById('quizPanel').style.display = m==='quiz'?'block':'none';
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('mapContainer').style.display = 'block';
+  const labels = document.getElementById('labels');
+  if (labels) labels.style.opacity = m==='study'?'1':'0';
+  if (m==='study') clearHighlights();
+  else startQuiz();
+}
+
+function shuffle(a) { const b=[...a]; for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];} return b; }
+
+function clearHighlights() {
+  document.querySelectorAll('.continent-path,.water-area').forEach(el => el.classList.remove('highlight','correct','wrong'));
+}
+
+function startQuiz() {
+  quizItems=shuffle(items); currentIndex=0; correct=0; wrong=0; answered=false;
+  document.getElementById('results').style.display='none';
+  document.getElementById('mapContainer').style.display='block';
+  document.getElementById('quizPanel').style.display='block';
+  document.getElementById('restartBtn').style.display='none';
+  document.getElementById('feedback').textContent='';
+  document.getElementById('feedback').className='feedback';
+  clearHighlights(); updateScore(); showQuestion();
+}
+
+function showQuestion() {
+  if (currentIndex>=quizItems.length) { showResults(); return; }
+  answered=false; clearHighlights();
+  const item=quizItems[currentIndex];
+  const t = item.type==='continent'?'ήπειρο':item.type==='ocean'?'ωκεανό':'θάλασσα';
+  document.getElementById('question').textContent=`Βρες στον χάρτη: ${item.name}`;
+  document.getElementById('feedback').textContent=`Κάνε κλικ στη σωστή ${t}!`;
+  document.getElementById('feedback').className='feedback';
+  updateScore();
+  document.getElementById('progressFill').style.width=(currentIndex/quizItems.length*100)+'%';
+}
+
+function updateScore() {
+  const r=quizItems.length-currentIndex;
+  document.getElementById('scoreCorrect').textContent=`Σωστά: ${correct}`;
+  document.getElementById('scoreWrong').textContent=`Λάθος: ${wrong}`;
+  document.getElementById('scoreRemaining').textContent=`Απομένουν: ${r}`;
+}
+
+function handleClick(clickedId) {
+  if (mode!=='quiz'||answered) return;
+  if (currentIndex>=quizItems.length) return;
+  answered=true;
+  const item=quizItems[currentIndex];
+  const fb=document.getElementById('feedback');
+  if (clickedId===item.id) {
+    correct++;
+    fb.textContent='Μπράβο! Σωστά!';
+    fb.className='feedback correct-feedback';
+    document.querySelectorAll(`[data-id="${clickedId}"]`).forEach(el=>el.classList.add('correct'));
+  } else {
+    wrong++;
+    const cn=items.find(i=>i.id===clickedId);
+    fb.textContent=`Λάθος! Αυτό ήταν: ${cn?cn.name:clickedId}`;
+    fb.className='feedback wrong-feedback';
+    document.querySelectorAll(`[data-id="${clickedId}"]`).forEach(el=>el.classList.add('wrong'));
+    document.querySelectorAll(`[data-id="${item.id}"]`).forEach(el=>el.classList.add('highlight'));
+  }
+  updateScore();
+  setTimeout(()=>{currentIndex++;showQuestion();},2200);
+}
+
+function showResults() {
+  document.getElementById('quizPanel').style.display='none';
+  document.getElementById('mapContainer').style.display='none';
+  document.getElementById('results').style.display='block';
+  const total=quizItems.length, pct=Math.round(correct/total*100);
+  document.getElementById('progressFill').style.width='100%';
+
+  if (pct===100) {
+    // PERFECT SCORE — celebration!
+    document.getElementById('perfectResult').style.display='block';
+    document.getElementById('normalResult').style.display='none';
+    launchConfetti();
+  } else {
+    document.getElementById('perfectResult').style.display='none';
+    document.getElementById('normalResult').style.display='block';
+    document.getElementById('scoreBig').textContent=`${correct}/${total}`;
+    let stars,msg;
+    if(pct>=80){stars='\u2B50\u2B50\u2B50\u2B50';msg='Πολύ καλά! Λίγο ακόμα εξάσκηση!';}
+    else if(pct>=60){stars='\u2B50\u2B50\u2B50';msg='Καλά! Δοκίμασε ξανά για καλύτερο αποτέλεσμα!';}
+    else if(pct>=40){stars='\u2B50\u2B50';msg='Χρειάζεσαι λίγο ακόμα μελέτη. Προσπάθησε ξανά!';}
+    else{stars='\u2B50';msg='Μελέτησε πρώτα τον χάρτη και δοκίμασε ξανά!';}
+    document.getElementById('starsDisplay').textContent=stars;
+    document.getElementById('gradeMsg').textContent=msg;
+  }
+}
+
+function launchConfetti() {
+  const container = document.getElementById('confettiContainer');
+  container.innerHTML = '';
+  const colors = ['#FFD700','#FF6B6B','#4CAF50','#64B5F6','#FF9800','#AB47BC','#00BCD4','#E91E63'];
+  const shapes = ['circle','square','triangle'];
+  for (let i = 0; i < 80; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti';
+    const color = colors[Math.floor(Math.random()*colors.length)];
+    const shape = shapes[Math.floor(Math.random()*shapes.length)];
+    const size = 8 + Math.random()*10;
+    el.style.left = Math.random()*100 + '%';
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+    el.style.backgroundColor = color;
+    el.style.animationDuration = (2 + Math.random()*3) + 's';
+    el.style.animationDelay = Math.random()*2 + 's';
+    if (shape==='circle') el.style.borderRadius='50%';
+    else if (shape==='triangle') {
+      el.style.width='0'; el.style.height='0'; el.style.backgroundColor='transparent';
+      el.style.borderLeft=size/2+'px solid transparent';
+      el.style.borderRight=size/2+'px solid transparent';
+      el.style.borderBottom=size+'px solid '+color;
+    }
+    container.appendChild(el);
+  }
+  // Clean up after animation
+  setTimeout(() => { container.innerHTML = ''; }, 6000);
+}
+</script>
+</body>
+</html>

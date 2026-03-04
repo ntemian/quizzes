@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Γαλαξίδι: Ξέρεις τους Φίλους μας; ⚓</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sky-top: #0a1628;
+  --sky-mid: #1a5276;
+  --sky-bot: #f39c4f;
+  --accent-primary: #42a5f5;
+  --accent-secondary: #f0a050;
+  --card-bg: rgba(10, 30, 60, 0.82);
+  --card-border: rgba(66, 165, 245, 0.18);
+  --btn-bg: #0d2137;
+  --text-primary: #e8f4ff;
+  --text-secondary: #8bb8d4;
+  --danger: #ff4757;
+  --success: #2ed573;
+  --gold: #ffd700;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Nunito', sans-serif;
+  min-height: 100vh;
+  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 50%, var(--sky-bot) 100%);
+  background-attachment: fixed;
+  overflow-x: hidden;
+  color: var(--text-primary);
+}
+.particles {
+  position: fixed; top:0; left:0; width:100%; height:100%;
+  pointer-events: none; z-index:0; overflow: hidden;
+}
+.particle {
+  position: absolute;
+  font-size: 1.4rem;
+  opacity: 0.3;
+  animation: floatUp linear infinite;
+}
+@keyframes floatUp {
+  0% { transform: translateY(105vh) rotate(0deg) scale(0.7); opacity:0; }
+  10% { opacity:0.35; }
+  90% { opacity:0.25; }
+  100% { transform: translateY(-10vh) rotate(360deg) scale(1.1); opacity:0; }
+}
+/* Waves */
+.waves {
+  position: fixed; bottom:0; left:0; width:100%; height:120px;
+  pointer-events: none; z-index:0; overflow: hidden;
+}
+.wave {
+  position: absolute; bottom:0; width:200%; height:80px;
+  background: rgba(66,165,245,0.08);
+  border-radius: 50% 50% 0 0;
+  animation: waveMove linear infinite;
+}
+.wave:nth-child(1){ animation-duration:8s; height:60px; bottom:0; opacity:0.5; }
+.wave:nth-child(2){ animation-duration:11s; height:70px; bottom:-10px; opacity:0.3; animation-delay:-3s; }
+.wave:nth-child(3){ animation-duration:14s; height:50px; bottom:-5px; opacity:0.2; animation-delay:-6s; }
+@keyframes waveMove {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  position: relative;
+  z-index: 1;
+}
+.screen.active { display: flex; }
+.card {
+  background: var(--card-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 24px;
+  border: 1px solid var(--card-border);
+  padding: 32px;
+  max-width: 540px;
+  width: 100%;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.game-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: 2.2rem;
+  text-align: center;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary), #fff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 2px 8px rgba(66,165,245,0.4));
+}
+.game-subtitle {
+  text-align: center;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+.player-select {
+  display: flex; gap: 14px; justify-content: center; margin: 20px 0;
+}
+.player-btn {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.3rem;
+  padding: 14px 32px;
+  border-radius: 16px;
+  border: 2px solid var(--card-border);
+  background: var(--btn-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex; align-items: center; gap: 8px;
+}
+.player-btn:hover { border-color: var(--accent-primary); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(66,165,245,0.3); }
+.player-btn.selected {
+  border-color: var(--accent-primary);
+  background: linear-gradient(135deg, rgba(66,165,245,0.25), rgba(240,160,80,0.2));
+  box-shadow: 0 0 24px rgba(66,165,245,0.35);
+  transform: scale(1.05);
+}
+.highscore-display {
+  text-align: center; font-size: 0.9rem;
+  color: var(--text-secondary); margin-top: 12px; min-height: 24px;
+}
+.start-btn {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.3rem;
+  padding: 16px 48px;
+  border-radius: 18px;
+  border: none;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  color: #fff;
+  cursor: pointer;
+  margin-top: 22px;
+  transition: all 0.3s;
+  display: block;
+  width: 80%;
+  margin-left: auto; margin-right: auto;
+  opacity: 0.4; pointer-events: none;
+}
+.start-btn.ready { opacity:1; pointer-events:all; }
+.start-btn.ready:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 6px 28px rgba(66,165,245,0.5); }
+.progress-wrap { width:100%; max-width:540px; margin-bottom:16px; }
+.progress-bar-bg {
+  width:100%; height:14px;
+  background: rgba(0,0,0,0.35);
+  border-radius: 12px; overflow: visible; position: relative;
+}
+.progress-bar-fill {
+  height:100%;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  border-radius: 12px;
+  transition: width 0.5s ease;
+  position: relative;
+}
+.progress-rider {
+  position: absolute; right:-14px; top:-12px;
+  font-size: 1.6rem; transition: all 0.5s ease;
+}
+.progress-text {
+  font-size: 0.8rem; color: var(--text-secondary);
+  text-align: right; margin-top: 4px;
+}
+.timer-bar-bg {
+  width:100%; max-width:540px; height:7px;
+  background: rgba(0,0,0,0.25);
+  border-radius: 6px; margin-bottom:14px; overflow: hidden;
+}
+.timer-bar-fill {
+  height:100%; border-radius:6px;
+  transition: width 0.15s linear, background 0.4s;
+  background: var(--success);
+}
+.question-badge {
+  display: inline-block;
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.7rem;
+  padding: 4px 12px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  color: #fff;
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+.question-text {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.25rem;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.question-detail {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+.char-portrait {
+  font-size: 3rem;
+  text-align: center;
+  margin: 10px 0 8px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(66,165,245,0.15), rgba(240,160,80,0.12));
+  border-radius: 16px;
+}
+.options { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.option-btn {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 14px 20px;
+  border-radius: 14px;
+  border: 2px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.06);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.25s;
+  text-align: left;
+}
+.option-btn:hover:not(.disabled) {
+  border-color: var(--accent-primary);
+  background: rgba(66,165,245,0.12);
+  transform: translateX(4px);
+}
+.option-btn.correct { border-color: var(--success); background: rgba(46,213,115,0.2); color: var(--success); }
+.option-btn.wrong { border-color: var(--danger); background: rgba(255,71,87,0.2); color: var(--danger); }
+.option-btn.disabled { pointer-events: none; opacity: 0.6; }
+.option-btn.show-correct { border-color: var(--success); background: rgba(46,213,115,0.15); }
+.hint-btn {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700; font-size: 0.9rem;
+  padding: 8px 18px; border-radius: 10px;
+  border: 1px solid rgba(255,215,0,0.3);
+  background: rgba(255,215,0,0.1);
+  color: var(--gold); cursor: pointer;
+  margin-top: 12px; transition: all 0.25s;
+  display: inline-block;
+}
+.hint-btn:hover { background: rgba(255,215,0,0.2); border-color: rgba(255,215,0,0.5); }
+.hint-btn.used { display: none; }
+.hint-box {
+  display: none;
+  background: rgba(255,215,0,0.08);
+  border: 1px solid rgba(255,215,0,0.2);
+  border-radius: 12px; padding: 10px 14px;
+  margin-top: 8px; font-size: 0.9rem; color: var(--gold);
+}
+.hint-box.visible { display: block; }
+.explanation-box {
+  display: none;
+  background: rgba(100,180,255,0.1);
+  border: 1px solid rgba(100,180,255,0.2);
+  border-radius: 12px; padding: 12px 16px;
+  margin-top: 12px; font-size: 0.92rem; color: #a8d8ff;
+}
+.explanation-box.visible { display: block; }
+.streak-display {
+  text-align: center;
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.9rem;
+  color: var(--gold);
+  min-height: 24px; margin-bottom: 6px;
+}
+.flash-overlay {
+  position: fixed; top:0; left:0; width:100%; height:100%;
+  pointer-events: none; z-index: 50;
+  opacity: 0; transition: opacity 0.15s;
+}
+.flash-overlay.green { background: rgba(46,213,115,0.15); opacity:1; }
+.flash-overlay.red { background: rgba(255,71,87,0.15); opacity:1; }
+.flash-overlay.gold { background: rgba(255,215,0,0.2); opacity:1; }
+.sparkle-container {
+  position: fixed; top:0; left:0; width:100%; height:100%;
+  pointer-events: none; z-index: 55; overflow: hidden;
+}
+.sparkle {
+  position: absolute; font-size: 1.8rem;
+  animation: sparkleAnim 1s ease-out forwards;
+}
+@keyframes sparkleAnim {
+  0% { transform: scale(0) rotate(0deg); opacity:1; }
+  50% { transform: scale(1.2) rotate(180deg); opacity:0.9; }
+  100% { transform: scale(0.3) rotate(360deg) translateY(-100px); opacity:0; }
+}
+.flip-emoji {
+  position: fixed; font-size: 4rem; z-index: 60;
+  top:50%; left:50%;
+  transform: translate(-50%,-50%) scale(0);
+  animation: flipIn 0.7s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes flipIn {
+  0% { transform: translate(-50%,-50%) scale(0) rotateY(0deg); }
+  50% { transform: translate(-50%,-50%) scale(1.4) rotateY(180deg); }
+  100% { transform: translate(-50%,-50%) scale(1) rotateY(360deg); opacity:0; }
+}
+.results-card { text-align: center; }
+.results-score {
+  font-family: 'Fredoka One', cursive;
+  font-size: 3.5rem;
+  background: linear-gradient(135deg, var(--accent-primary), var(--gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.results-stars { font-size: 2.5rem; margin: 10px 0; }
+.results-msg {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.15rem;
+  color: var(--accent-primary);
+  margin: 8px 0;
+}
+.results-detail { font-size: 0.95rem; color: var(--text-secondary); margin: 4px 0; }
+.new-record {
+  display: none;
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.1rem; color: var(--gold);
+  animation: pulseGlow 0.8s ease-in-out infinite alternate;
+  margin: 10px 0;
+}
+.new-record.visible { display: block; }
+@keyframes pulseGlow {
+  from { text-shadow: 0 0 8px rgba(255,215,0,0.4); transform: scale(1); }
+  to { text-shadow: 0 0 20px rgba(255,215,0,0.8); transform: scale(1.05); }
+}
+.results-btns { display: flex; gap: 10px; margin-top: 18px; justify-content: center; flex-wrap: wrap; }
+.results-btn {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1rem; padding: 12px 24px;
+  border-radius: 14px; border: none; cursor: pointer;
+  transition: all 0.3s;
+}
+.results-btn.primary { background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; }
+.results-btn.secondary { background: rgba(255,255,255,0.08); color: var(--text-primary); border: 1px solid var(--card-border); }
+.results-btn:hover { transform: translateY(-2px); }
+.review-card { max-height: 80vh; overflow-y: auto; }
+.review-item {
+  background: rgba(255,255,255,0.04);
+  border-radius: 12px; padding: 14px;
+  margin-bottom: 12px;
+  border-left: 3px solid var(--danger);
+}
+.review-item.correct-review { border-left-color: var(--success); }
+.review-q { font-weight: 700; margin-bottom: 6px; font-size: 0.95rem; }
+.review-your { color: var(--danger); font-size: 0.88rem; }
+.review-correct { color: var(--success); font-size: 0.88rem; }
+.review-explain { color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px; }
+.back-btn {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1rem; padding: 12px 32px;
+  border-radius: 14px; border: none;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  color: #fff; cursor: pointer;
+  margin-top: 16px; transition: all 0.3s;
+}
+.back-btn:hover { transform: translateY(-2px); }
+.confetti-piece {
+  position: fixed; font-size: 1.6rem; z-index: 70;
+  pointer-events: none;
+  animation: confettiFall linear forwards;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(-10vh) rotate(0deg) scale(1); opacity:1; }
+  80% { opacity:1; }
+  100% { transform: translateY(110vh) rotate(720deg) scale(0.5); opacity:0; }
+}
+.creators {
+  font-size: 0.8rem; color: var(--text-secondary);
+  text-align: center; margin-top: 16px; font-style: italic;
+}
+@media (max-width: 560px) {
+  .card { padding: 20px 16px; margin: 10px; }
+  .game-title { font-size: 1.7rem; }
+  .question-text { font-size: 1.05rem; }
+  .option-btn { font-size: 0.95rem; padding: 12px 16px; }
+  .player-btn { font-size: 1.1rem; padding: 12px 24px; }
+  .results-score { font-size: 2.8rem; }
+}
+</style>
+</head>
+<body>
+<div class="particles" id="particles"></div>
+<div class="waves"><div class="wave"></div><div class="wave"></div><div class="wave"></div></div>
+<div class="flash-overlay" id="flashOverlay"></div>
+<div class="sparkle-container" id="sparkleContainer"></div>
+
+<!-- START SCREEN -->
+<div class="screen active" id="startScreen">
+  <div class="card">
+    <div class="game-title">Γαλαξίδι Quiz</div>
+    <div class="game-subtitle">⚓ Ξέρεις τους Φίλους μας; 🌊</div>
+    <div style="text-align:center; font-size:3rem; margin:10px 0;">🏠⚓🌅🐚🚢</div>
+    <p style="text-align:center; color:var(--text-secondary); font-size:0.92rem; margin-bottom:16px;">
+      Πόσο καλά ξέρεις τους φίλους μας στο Γαλαξίδι;<br>
+      12 ερωτήσεις · 25 δευτερόλεπτα η κάθε μια<br>
+      <span style="color:var(--gold);">🔥 Streak bonus = διπλοί πόντοι!</span>
+    </p>
+    <div style="text-align:center; font-size:0.85rem; color:var(--text-secondary); margin-bottom:6px;">Ποιος παίζει;</div>
+    <div class="player-select">
+      <button class="player-btn" onclick="selectPlayer('Ajax')">🗡️ Έντας</button>
+      <button class="player-btn" onclick="selectPlayer('Clio')">🎤 Κλειώ</button>
+    </div>
+    <div class="highscore-display" id="highscoreDisplay"></div>
+    <button class="start-btn" id="startBtn" onclick="startGame()">⚓ Ξεκίνα!</button>
+    <div class="creators">Φτιαγμένο με αγάπη από τον Μπαμπά & τον Έντα</div>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div class="screen" id="gameScreen">
+  <div class="streak-display" id="streakDisplay"></div>
+  <div class="progress-wrap">
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progressFill" style="width:0%">
+        <span class="progress-rider" id="progressRider">⛵</span>
+      </div>
+    </div>
+    <div class="progress-text" id="progressText">0 / 12</div>
+  </div>
+  <div class="timer-bar-bg">
+    <div class="timer-bar-fill" id="timerFill" style="width:100%"></div>
+  </div>
+  <div class="card" id="questionCard">
+    <div class="question-badge" id="questionBadge">ΕΡΩΤΗΣΗ</div>
+    <div class="char-portrait" id="charPortrait" style="display:none;"></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="question-detail" id="questionDetail"></div>
+    <div class="options" id="optionsContainer"></div>
+    <button class="hint-btn" id="hintBtn" onclick="useHint()">💡 Βοήθεια</button>
+    <div class="hint-box" id="hintBox"></div>
+    <div class="explanation-box" id="explanationBox"></div>
+  </div>
+</div>
+
+<!-- RESULTS SCREEN -->
+<div class="screen" id="resultsScreen">
+  <div class="card results-card">
+    <div class="game-title" style="font-size:1.6rem;">⚓ Τέλος Κουίζ!</div>
+    <div class="results-score" id="resultsScore">0</div>
+    <div class="results-stars" id="resultsStars"></div>
+    <div class="results-msg" id="resultsMsg"></div>
+    <div class="new-record" id="newRecord">🏆 Νέο Ρεκόρ! 🏆</div>
+    <div class="results-detail" id="resultsCorrect"></div>
+    <div class="results-detail" id="resultsStreak"></div>
+    <div class="results-btns">
+      <button class="results-btn primary" onclick="restartGame()">🔄 Ξανά!</button>
+      <button class="results-btn secondary" onclick="showReview()">📋 Δες τα Λάθη</button>
+      <button class="results-btn secondary" onclick="goHome()">🏠 Αρχική</button>
+    </div>
+  </div>
+</div>
+
+<!-- REVIEW SCREEN -->
+<div class="screen" id="reviewScreen">
+  <div class="card review-card">
+    <div class="game-title" style="font-size:1.3rem;">📋 Τι πήγε λάθος;</div>
+    <div id="reviewList" style="margin-top:16px;"></div>
+    <button class="back-btn" onclick="backToResults()">← Πίσω</button>
+  </div>
+</div>
+
+<script>
+// ===== SOUND ENGINE =====
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+function ensureAudio(){ if(!audioCtx) audioCtx = new AudioCtx(); }
+function playNote(freq, dur, type='triangle', gain=0.13, delay=0){
+  ensureAudio();
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(gain, audioCtx.currentTime+delay);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+delay+dur);
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(audioCtx.currentTime+delay);
+  o.stop(audioCtx.currentTime+delay+dur);
+}
+function sndCorrect(){ [523,659,784,1047].forEach((f,i)=>playNote(f,0.15,'triangle',0.1,i*0.08)); }
+function sndWrong(){ playNote(330,0.25,'sawtooth',0.08,0); playNote(262,0.35,'sawtooth',0.08,0.12); }
+function sndStreak(){ [523,587,659,784,880,988,1047,1175].forEach((f,i)=>playNote(f,0.12,'triangle',0.08,i*0.06)); }
+function sndVictory(){
+  const n=[523,659,784,1047,784,880,988,1047,1319];
+  n.forEach((f,i)=>playNote(f,0.2,'triangle',0.1,i*0.1));
+  n.forEach((f,i)=>playNote(f*1.5,0.2,'sine',0.05,i*0.1+0.05));
+}
+function sndClick(){ playNote(880,0.08,'sine',0.07); }
+function sndNewRound(){ [440,523,659].forEach((f,i)=>playNote(f,0.12,'sine',0.07,i*0.09)); }
+function sndTimeout(){ [440,370,311].forEach((f,i)=>playNote(f,0.2,'square',0.06,i*0.12)); }
+
+// ===== QUESTIONS =====
+const characterQs = [
+  {
+    type:'character', badge:'ΠΟΙΟΣ ΕΙΝΑΙ;',
+    portrait:'👦🏻⚔️',
+    text:'Ο φίλος του Έντα, αδερφός του Χρυσόστομου. Ποιος είναι;',
+    detail:'Οι γονείς του είναι ο Βασίλης κι η Ευαγγελία',
+    hint:'Το όνομά του αρχίζει από Δ...',
+    hint2:'Ο αδερφός του Χρυσόστομου!',
+    options:['Δημήτρης','Γιώργος','Ιωνάς','Αναστάσης'],
+    answer:'Δημήτρης',
+    explanation:'Ο Δημήτρης είναι ο φίλος του Έντα στο Γαλαξίδι! Αδερφός του Χρυσόστομου.'
+  },
+  {
+    type:'character', badge:'ΠΟΙΟΣ ΕΙΝΑΙ;',
+    portrait:'👦🏻🚢',
+    text:'Ο γιος του Δημήτρη Πετρατζά, φίλος της Κλειώς. Ποιος είναι;',
+    detail:'Ο μπαμπάς του είναι από τους κολλητούς του δικού μας μπαμπά',
+    hint:'Αρχαίο ελληνικό όνομα, σαν τον αρχηγό των Αργοναυτών...',
+    hint2:'Αρχίζει από Ι, τελειώνει σε -ας!',
+    options:['Ιωνάς','Δημήτρης','Γιώργος','Χρυσόστομος'],
+    answer:'Ιωνάς',
+    explanation:'Ο Ιωνάς Πετρατζάς! Γιος του Δημήτρη Πετρατζά.'
+  },
+  {
+    type:'character', badge:'ΠΟΙΑ ΕΙΝΑΙ;',
+    portrait:'👧🏻🌸',
+    text:'Κόρη του Κωνσταντίνου Καραλή, φιλενάδα της Κλειώς. Ποια είναι;',
+    detail:'Το επώνυμό της είναι Καραλή',
+    hint:'Όνομα λουλουδιού...',
+    hint2:'Μαργαρίτα — σαν το λουλούδι!',
+    options:['Μαργαρίτα','Ελένα','Σίλια','Αφροδίτη'],
+    answer:'Μαργαρίτα',
+    explanation:'Η Μαργαρίτα Καραλή! Κόρη του Κωνσταντίνου Καραλή.'
+  },
+  {
+    type:'character', badge:'ΠΟΙΑ ΕΙΝΑΙ;',
+    portrait:'👧🏻✨',
+    text:'Κόρη του Βασίλη κι της Χρυσαφώς, φιλενάδα της Κλειώς. Ποια είναι;',
+    detail:'Το επώνυμό της είναι Βελάνη',
+    hint:'Όνομα αρχαίας θεάς...',
+    hint2:'Η θεά της ομορφιάς!',
+    options:['Αφροδίτη','Μαργαρίτα','Ελένα','Σίλια'],
+    answer:'Αφροδίτη',
+    explanation:'Η Αφροδίτη Βελάνη! Κόρη του Βασίλη κι της Χρυσαφώς.'
+  },
+  {
+    type:'character', badge:'ΠΟΙΟΣ ΕΙΝΑΙ;',
+    portrait:'👦🏻🏗️',
+    text:'Γιος του Γιάννη Βελάνη (ιδιοκτήτη του Μύλου). Ποιος είναι;',
+    detail:'Ο μπαμπάς του έχει τον ανεμόμυλο-μπαρ στο Γαλαξίδι',
+    hint:'Πολύ κοινό ελληνικό όνομα...',
+    hint2:'Γ... Βελάνης!',
+    options:['Γιώργος Βελάνης','Χρυσόστομος Βελάνης','Δημήτρης','Ιωνάς'],
+    answer:'Γιώργος Βελάνης',
+    explanation:'Ο Γιώργος Βελάνης! Γιος του Γιάννη Βελάνη, ιδιοκτήτη του Μύλου.'
+  },
+  {
+    type:'character', badge:'ΠΟΙΟΣ ΕΙΝΑΙ;',
+    portrait:'👦🏻🐉',
+    text:'Φίλος του μπαμπά στο Γαλαξίδι, με παρατσούκλι... δράκου!',
+    detail:'Είναι στο Viber group της παρέας',
+    hint:'Φτερά, φωτιά, κλίμακες...',
+    hint2:'ΔΡΑΚΟΣ! 🐉',
+    options:['Δράκος','Πάτρας','Ηρακλής','Μπάμπης'],
+    answer:'Δράκος',
+    explanation:'Ο Δράκος! Παρατσούκλι φίλου του μπαμπά από το Γαλαξίδι.'
+  }
+];
+
+const familyQs = [
+  {
+    type:'family', badge:'ΟΙΚΟΓΕΝΕΙΑ',
+    text:'Ποιος είναι ο αδερφός του Δημήτρη (φίλου του Έντα);',
+    detail:'Μένουν στο Γαλαξίδι, γονείς τους ο Βασίλης κι η Ευαγγελία',
+    hint:'Πολύ μεγάλο όνομα... χρυσό!',
+    hint2:'Χρυσό + στόμα = ...',
+    options:['Χρυσόστομος','Γιώργος','Ιωνάς','Βαγγέλης'],
+    answer:'Χρυσόστομος',
+    explanation:'Ο Χρυσόστομος! Αδερφός του Δημήτρη, γιοι του Βασίλη κι της Ευαγγελίας.'
+  },
+  {
+    type:'family', badge:'ΟΙΚΟΓΕΝΕΙΑ',
+    text:'Ποιος είναι ο μπαμπάς του Ιωνά;',
+    detail:'Φίλος του δικού μας μπαμπά, μέλος της "παρέας"',
+    hint:'Ίδιο όνομα με τον αδερφό του Χρυσόστομου...',
+    hint2:'Δημήτρης Πετρατζάς!',
+    options:['Δημήτρης Πετρατζάς','Βασίλης','Θανάσης','Γιάννης Βελάνης'],
+    answer:'Δημήτρης Πετρατζάς',
+    explanation:'Ο Δημήτρης Πετρατζάς! Κολλητός φίλος του μπαμπά, μπαμπάς του Ιωνά.'
+  },
+  {
+    type:'family', badge:'ΟΙΚΟΓΕΝΕΙΑ',
+    text:'Πώς λένε τη μαμά του Δημήτρη κι του Χρυσόστομου;',
+    detail:'Παντρεμένη με τον Βασίλη',
+    hint:'Αρχίζει από Ε...',
+    hint2:'Ευ-αγγελ-ία... σαν "καλό μήνυμα"!',
+    options:['Ευαγγελία','Ελένη','Χρυσαφώ','Μαρία'],
+    answer:'Ευαγγελία',
+    explanation:'Η Ευαγγελία! Μαμά του Δημήτρη κι του Χρυσόστομου, γυναίκα του Βασίλη.'
+  },
+  {
+    type:'family', badge:'ΟΙΚΟΓΕΝΕΙΑ',
+    text:'Ποιος είναι ο ιδιοκτήτης του Μύλου στο Γαλαξίδι;',
+    detail:'Ο Μύλος = ο ανεμόμυλος που έγινε μπαρ/χώρος εκδηλώσεων',
+    hint:'Μπαμπάς του Γιώργου Βελάνη...',
+    hint2:'Γιάννης Β...!',
+    options:['Γιάννης Βελάνης','Κωνσταντίνος Καραλής','Βασίλης','Δημήτρης Πετρατζάς'],
+    answer:'Γιάννης Βελάνης',
+    explanation:'Ο Γιάννης Βελάνης! Ιδιοκτήτης του Μύλου Γαλαξειδίου, μπαμπάς του Γιώργου.'
+  },
+  {
+    type:'family', badge:'ΟΙΚΟΓΕΝΕΙΑ',
+    text:'Ποιος είναι ο μπαμπάς της Μαργαρίτας;',
+    detail:'Επώνυμο: Καραλής',
+    hint:'Αρχίζει από Κ...',
+    hint2:'Κωνσταντίνος Καραλής!',
+    options:['Κωνσταντίνος Καραλής','Γιάννης Βελάνης','Βασίλης','Θανάσης'],
+    answer:'Κωνσταντίνος Καραλής',
+    explanation:'Ο Κωνσταντίνος Καραλής! Μπαμπάς της Μαργαρίτας Καραλή.'
+  },
+  {
+    type:'family', badge:'ΟΙΚΟΓΕΝΕΙΑ',
+    text:'Πώς λένε τη γυναίκα του Δημήτρη Πετρατζά;',
+    detail:'Μαμά του Ιωνά',
+    hint:'Κλασικό ελληνικό όνομα...',
+    hint2:'Ελένη Κωστάκου!',
+    options:['Ελένη Κωστάκου','Ευαγγελία','Χρυσαφώ','Μαρία'],
+    answer:'Ελένη Κωστάκου',
+    explanation:'Η Ελένη Κωστάκου! Γυναίκα του Δημήτρη Πετρατζά, μαμά του Ιωνά.'
+  },
+  {
+    type:'family', badge:'ΟΙΚΟΓΕΝΕΙΑ',
+    text:'Πώς λένε τον μπαμπά του Δημήτρη κι του Χρυσόστομου;',
+    detail:'Παντρεμένος με την Ευαγγελία',
+    hint:'Πολύ κοινό ελληνικό όνομα, αρχίζει από Β...',
+    hint2:'Βασίλης — σαν "βασιλιάς"!',
+    options:['Βασίλης','Γιάννης','Κωνσταντίνος','Δημήτρης'],
+    answer:'Βασίλης',
+    explanation:'Ο Βασίλης! Μπαμπάς του Δημήτρη κι του Χρυσόστομου, άντρας της Ευαγγελίας.'
+  }
+];
+
+const tfQs = [
+  {
+    type:'tf', badge:'ΑΛΗΘΕΙΑ / ΨΕΜΑ',
+    text:'Ο Δημήτρης κι ο Χρυσόστομος είναι αδέρφια',
+    detail:'Δύο αγόρια στο Γαλαξίδι...',
+    hint:'Σκέψου ποιοι είναι οι γονείς τους...',
+    hint2:'Και οι δύο γιοι του Βασίλη κι της Ευαγγελίας!',
+    options:['Αλήθεια','Ψέμα'],
+    answer:'Αλήθεια',
+    explanation:'Ναι! Ο Δημήτρης κι ο Χρυσόστομος είναι αδέρφια, γιοι του Βασίλη κι της Ευαγγελίας.'
+  },
+  {
+    type:'tf', badge:'ΑΛΗΘΕΙΑ / ΨΕΜΑ',
+    text:'Η Ελένα είναι φιλενάδα του Έντα στο Γαλαξίδι',
+    detail:'Ελένα... φίλη ποιανού;',
+    hint:'Σκέψου ποιος ΑΛΛΟΣ στην οικογένεια κάνει παρέα μαζί της...',
+    hint2:'Η Ελένα κάνει παρέα με την... Κλειώ!',
+    options:['Αλήθεια','Ψέμα'],
+    answer:'Ψέμα',
+    explanation:'Η Ελένα είναι φιλενάδα της Κλειώς, όχι του Έντα!'
+  },
+  {
+    type:'tf', badge:'ΑΛΗΘΕΙΑ / ΨΕΜΑ',
+    text:'Ο μπαμπάς του Ιωνά λέγεται Θανάσης',
+    detail:'Ιωνάς Πετρατζάς... ποιος είναι ο μπαμπάς του;',
+    hint:'Ο μπαμπάς του έχει το ίδιο όνομα με τον φίλο του Έντα...',
+    hint2:'Δημήτρης Πετρατζάς — ΟΧΙ Θανάσης!',
+    options:['Αλήθεια','Ψέμα'],
+    answer:'Ψέμα',
+    explanation:'Ο μπαμπάς του Ιωνά είναι ο Δημήτρης Πετρατζάς, όχι ο Θανάσης!'
+  },
+  {
+    type:'tf', badge:'ΑΛΗΘΕΙΑ / ΨΕΜΑ',
+    text:'Η Σίλια είναι φιλενάδα της Κλειώς στο Γαλαξίδι',
+    detail:'Σίλια... φίλη ποιανού;',
+    hint:'Κάνει παρέα με ένα κορίτσι της οικογένειας...',
+    hint2:'Σίλια + Κλειώ = φιλενάδες!',
+    options:['Αλήθεια','Ψέμα'],
+    answer:'Αλήθεια',
+    explanation:'Ναι! Η Σίλια είναι φιλενάδα της Κλειώς στο Γαλαξίδι!'
+  },
+  {
+    type:'tf', badge:'ΑΛΗΘΕΙΑ / ΨΕΜΑ',
+    text:'Ο Μύλος ανήκει στον Κωνσταντίνο Καραλή',
+    detail:'Ο Μύλος Γαλαξειδίου — ένας ανεμόμυλος που έγινε μπαρ',
+    hint:'Ο Καραλής είναι μπαμπάς ποιανής;',
+    hint2:'Ο Μύλος ανήκει σε κάποιον... Βελάνη!',
+    options:['Αλήθεια','Ψέμα'],
+    answer:'Ψέμα',
+    explanation:'Ο Μύλος ανήκει στον Γιάννη Βελάνη, ΟΧΙ στον Κωνσταντίνο Καραλή!'
+  },
+  {
+    type:'tf', badge:'ΑΛΗΘΕΙΑ / ΨΕΜΑ',
+    text:'Η Αφροδίτη Βελάνη είναι αδερφή του Δημήτρη',
+    detail:'Βελάνη... ίδιο επώνυμο;',
+    hint:'Σκέψου ποιοι είναι οι γονείς του Δημήτρη...',
+    hint2:'Ο Δημήτρης = γιος Βασίλη κι Ευαγγελίας. Η Αφροδίτη = κόρη Βασίλη κι Χρυσαφώς!',
+    options:['Αλήθεια','Ψέμα'],
+    answer:'Ψέμα',
+    explanation:'Η Αφροδίτη Βελάνη είναι κόρη του Βασίλη κι της Χρυσαφώς. Ο Δημήτρης είναι γιος ΑΛΛΟΥ Βασίλη (κι Ευαγγελίας)!'
+  },
+  {
+    type:'tf', badge:'ΑΛΗΘΕΙΑ / ΨΕΜΑ',
+    text:'Ο Ηρακλής είναι φίλος του μπαμπά στο Γαλαξίδι',
+    detail:'Ηρακλής... είναι στην παρέα;',
+    hint:'Σκέψου το Viber group...',
+    hint2:'Ναι! Ο Ηρακλής είναι στο group!',
+    options:['Αλήθεια','Ψέμα'],
+    answer:'Αλήθεια',
+    explanation:'Ναι! Ο Ηρακλής είναι μέλος της παρέας του μπαμπά στο Γαλαξίδι!'
+  }
+];
+
+const triviaQs = [
+  {
+    type:'trivia', badge:'ΕΡΩΤΗΣΗ',
+    text:'Ποια από αυτές ΔΕΝ είναι φιλενάδα της Κλειώς στο Γαλαξίδι;',
+    detail:'Τρεις είναι φιλενάδες, μία ΟΧΙ!',
+    hint:'Μία από αυτές είναι ενήλικη, όχι παιδί...',
+    hint2:'Η Ευαγγελία είναι μαμά, όχι παιδί!',
+    options:['Ευαγγελία','Ελένα','Σίλια','Μαργαρίτα'],
+    answer:'Ευαγγελία',
+    explanation:'Η Ευαγγελία είναι η μαμά του Δημήτρη κι του Χρυσόστομου — ΟΧΙ φιλενάδα της Κλειώς!'
+  },
+  {
+    type:'trivia', badge:'ΕΡΩΤΗΣΗ',
+    text:'Ποιος είναι ο καλύτερος φίλος του Έντα στο Γαλαξίδι;',
+    detail:'Αδερφός του Χρυσόστομου',
+    hint:'Γιος Βασίλη κι Ευαγγελίας...',
+    hint2:'Δ... — αρχίζει σαν "Δέκα"!',
+    options:['Δημήτρης','Ιωνάς','Γιώργος','Χρυσόστομος'],
+    answer:'Δημήτρης',
+    explanation:'Ο Δημήτρης! Ο κολλητός φίλος του Έντα στο Γαλαξίδι.'
+  },
+  {
+    type:'trivia', badge:'ΕΡΩΤΗΣΗ',
+    text:'Ποιος φίλος του μπαμπά έχει παρατσούκλι πόλης;',
+    detail:'Μια μεγάλη πόλη στη Δυτική Ελλάδα...',
+    hint:'Λιμάνι, Καρναβάλι, γέφυρα...',
+    hint2:'Πάτρα = η πόλη, Πάτρας = ο φίλος!',
+    options:['Πάτρας','Δράκος','Ηρακλής','Θανάσης'],
+    answer:'Πάτρας',
+    explanation:'Ο Πάτρας! Παρατσούκλι φίλου του μπαμπά — σαν την πόλη Πάτρα.'
+  },
+  {
+    type:'trivia', badge:'ΕΡΩΤΗΣΗ',
+    text:'Πώς λέγεται ο ανεμόμυλος-μπαρ στο Γαλαξίδι;',
+    detail:'Ένα διάσημο σημείο στο Γαλαξίδι',
+    hint:'Σκέψου τι κάνει ένας ανεμόμυλος — αλέθει!',
+    hint2:'Αρχίζει από Μ...',
+    options:['Ο Μύλος','Η Άγκυρα','Το Κύμα','Ο Φάρος'],
+    answer:'Ο Μύλος',
+    explanation:'Ο Μύλος Γαλαξειδίου! Ανεμόμυλος που έγινε μπαρ/χώρος εκδηλώσεων, του Γιάννη Βελάνη.'
+  },
+  {
+    type:'trivia', badge:'ΕΡΩΤΗΣΗ',
+    text:'Ποιο ζευγάρι είναι γονείς του Δημήτρη κι του Χρυσόστομου;',
+    detail:'Μπαμπάς και μαμά δύο αγοριών στο Γαλαξίδι',
+    hint:'Ο μπαμπάς αρχίζει από Β, η μαμά από Ε...',
+    hint2:'Β... κι Ε...!',
+    options:['Βασίλης & Ευαγγελία','Γιάννης & Χρυσαφώ','Κωνσταντίνος & Ελένη','Δημήτρης & Μαρία'],
+    answer:'Βασίλης & Ευαγγελία',
+    explanation:'Βασίλης κι Ευαγγελία! Γονείς του Δημήτρη κι του Χρυσόστομου.'
+  },
+  {
+    type:'trivia', badge:'ΕΡΩΤΗΣΗ',
+    text:'Ποιος από αυτούς ΔΕΝ είναι στην παρέα του μπαμπά στο Viber;',
+    detail:'Τρεις είναι μέσα, ένας ΟΧΙ!',
+    hint:'Ένας από αυτούς είναι παιδί, όχι ενήλικας...',
+    hint2:'Ο Χρυσόστομος Βελάνης είναι παιδί!',
+    options:['Χρυσόστομος Βελάνης','Θανάσης','Βαγγέλης','Μπάμπης'],
+    answer:'Χρυσόστομος Βελάνης',
+    explanation:'Ο Χρυσόστομος Βελάνης είναι παιδί — ΟΧΙ μέλος του Viber group ενηλίκων!'
+  }
+];
+
+// ===== GAME STATE =====
+let player = null;
+let questions = [];
+let currentQ = 0;
+let score = 0;
+let streak = 0;
+let maxStreak = 0;
+let hintUsed = false;
+let answered = false;
+let timerInterval = null;
+let timeLeft = 25;
+let gameLog = [];
+const TOTAL = 12;
+const TIME_PER_Q = 25;
+const confettiEmojis = ['⚓','🚢','🌊','🐚','☀️','🏖️','⛵','🐬'];
+
+// ===== PARTICLES =====
+function initParticles(){
+  const c = document.getElementById('particles');
+  const emojis = ['⚓','🌊','⛵','🐚','☀️','🐬','🏠','🌅','💙','✨'];
+  for(let i=0; i<24; i++){
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.textContent = emojis[i % emojis.length];
+    p.style.left = Math.random()*100+'%';
+    p.style.animationDuration = (9 + Math.random()*14)+'s';
+    p.style.animationDelay = (Math.random()*12)+'s';
+    p.style.fontSize = (0.9 + Math.random()*1.2)+'rem';
+    c.appendChild(p);
+  }
+}
+
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function selectPlayer(name){
+  player = name;
+  sndClick();
+  document.querySelectorAll('.player-btn').forEach(b=>b.classList.remove('selected'));
+  event.target.closest('.player-btn').classList.add('selected');
+  document.getElementById('startBtn').classList.add('ready');
+  const hs = localStorage.getItem('galaxidi-friends-hs-'+name);
+  document.getElementById('highscoreDisplay').textContent = hs ? `🏆 Ρεκόρ ${name}: ${hs} πόντοι` : '';
+}
+
+function startGame(){
+  if(!player) return;
+  sndClick();
+  // Pick 12: 3 character + 3 family + 3 tf + 3 trivia
+  const chars = shuffle(characterQs).slice(0,3);
+  const fams = shuffle(familyQs).slice(0,3);
+  const tfs = shuffle(tfQs).slice(0,3);
+  const trivs = shuffle(triviaQs).slice(0,3);
+  questions = shuffle([...chars,...fams,...tfs,...trivs]);
+  currentQ=0; score=0; streak=0; maxStreak=0; gameLog=[];
+  showScreen('gameScreen');
+  loadQuestion();
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function loadQuestion(){
+  if(currentQ >= TOTAL){ endGame(); return; }
+  sndNewRound();
+  answered=false; hintUsed=false;
+  const q = questions[currentQ];
+  const pct = (currentQ/TOTAL)*100;
+  document.getElementById('progressFill').style.width = pct+'%';
+  document.getElementById('progressText').textContent = `${currentQ} / ${TOTAL}`;
+  document.getElementById('streakDisplay').textContent = streak>=3 ? `🔥 Streak x${streak}! Διπλοί πόντοι! 🔥` : streak>=2 ? `⚓ ${streak} στη σειρά...` : '';
+  document.getElementById('questionBadge').textContent = q.badge;
+  const portrait = document.getElementById('charPortrait');
+  if(q.type==='character'){ portrait.style.display='block'; portrait.textContent=q.portrait; }
+  else { portrait.style.display='none'; }
+  document.getElementById('questionText').textContent = q.text;
+  document.getElementById('questionDetail').textContent = q.detail||'';
+  const optC = document.getElementById('optionsContainer');
+  optC.innerHTML='';
+  const shuffledOpts = q.type==='tf' ? q.options : shuffle(q.options);
+  shuffledOpts.forEach(opt=>{
+    const btn = document.createElement('button');
+    btn.className='option-btn';
+    btn.textContent=opt;
+    btn.onclick=()=>selectAnswer(opt,btn);
+    optC.appendChild(btn);
+  });
+  document.getElementById('hintBtn').classList.remove('used');
+  document.getElementById('hintBtn').style.display='inline-block';
+  document.getElementById('hintBox').classList.remove('visible');
+  document.getElementById('hintBox').textContent='';
+  document.getElementById('explanationBox').classList.remove('visible');
+  document.getElementById('explanationBox').textContent='';
+  timeLeft=TIME_PER_Q;
+  startTimer();
+}
+
+function startTimer(){
+  clearInterval(timerInterval);
+  const fill=document.getElementById('timerFill');
+  fill.style.width='100%';
+  fill.style.background='var(--success)';
+  timerInterval=setInterval(()=>{
+    if(answered) return;
+    timeLeft-=0.1;
+    const pct=(timeLeft/TIME_PER_Q)*100;
+    fill.style.width=Math.max(0,pct)+'%';
+    if(pct>50) fill.style.background='var(--success)';
+    else if(pct>25) fill.style.background='#ffd700';
+    else fill.style.background='var(--danger)';
+    if(timeLeft<=0){ clearInterval(timerInterval); timeoutAnswer(); }
+  },100);
+}
+
+function timeoutAnswer(){
+  if(answered) return;
+  answered=true; sndTimeout();
+  const q=questions[currentQ]; streak=0;
+  flashScreen('red');
+  document.querySelectorAll('.option-btn').forEach(btn=>{
+    btn.classList.add('disabled');
+    if(btn.textContent===q.answer) btn.classList.add('show-correct');
+  });
+  const expBox=document.getElementById('explanationBox');
+  expBox.innerHTML=`💡 Τέλος χρόνου! Σωστό: <strong>${q.answer}</strong><br>${q.explanation}`;
+  expBox.classList.add('visible');
+  document.getElementById('hintBtn').style.display='none';
+  gameLog.push({q:q.text,given:'⏰ Τέλος χρόνου',correct:q.answer,explanation:q.explanation,wasCorrect:false});
+  setTimeout(()=>{currentQ++;loadQuestion();},2800);
+}
+
+function selectAnswer(opt,btn){
+  if(answered) return;
+  answered=true; clearInterval(timerInterval);
+  const q=questions[currentQ];
+  const isCorrect=opt===q.answer;
+  document.querySelectorAll('.option-btn').forEach(b=>b.classList.add('disabled'));
+  document.getElementById('hintBtn').style.display='none';
+  if(isCorrect){
+    btn.classList.add('correct');
+    streak++; if(streak>maxStreak) maxStreak=streak;
+    const isStreak=streak>=3;
+    let pts=hintUsed?5:10;
+    if(isStreak) pts*=2;
+    score+=pts;
+    if(isStreak){sndStreak();flashScreen('gold');}
+    else{sndCorrect();flashScreen('green');}
+    spawnSparkles(); spawnFlipEmoji();
+  } else {
+    btn.classList.add('wrong'); streak=0;
+    sndWrong(); flashScreen('red');
+    document.querySelectorAll('.option-btn').forEach(b=>{
+      if(b.textContent===q.answer) b.classList.add('show-correct');
+    });
+    const expBox=document.getElementById('explanationBox');
+    expBox.innerHTML=`💡 Σωστό: <strong>${q.answer}</strong><br>${q.explanation}`;
+    expBox.classList.add('visible');
+  }
+  gameLog.push({q:q.text,given:opt,correct:q.answer,explanation:q.explanation,wasCorrect:isCorrect});
+  setTimeout(()=>{currentQ++;loadQuestion();},isCorrect?1400:2800);
+}
+
+function useHint(){
+  if(hintUsed||answered) return;
+  hintUsed=true; sndClick();
+  const q=questions[currentQ];
+  document.getElementById('hintBox').textContent='💡 '+q.hint2;
+  document.getElementById('hintBox').classList.add('visible');
+  document.getElementById('hintBtn').classList.add('used');
+}
+
+function flashScreen(color){
+  const el=document.getElementById('flashOverlay');
+  el.className='flash-overlay '+color;
+  setTimeout(()=>el.className='flash-overlay',350);
+}
+
+function spawnSparkles(){
+  const c=document.getElementById('sparkleContainer');
+  for(let i=0;i<8;i++){
+    const s=document.createElement('div');
+    s.className='sparkle';
+    s.textContent=confettiEmojis[Math.floor(Math.random()*confettiEmojis.length)];
+    s.style.left=(30+Math.random()*40)+'%';
+    s.style.top=(30+Math.random()*40)+'%';
+    c.appendChild(s);
+    setTimeout(()=>s.remove(),1200);
+  }
+}
+
+function spawnFlipEmoji(){
+  const emojis=['⚓','🚢','⛵','🐬','🌊'];
+  const el=document.createElement('div');
+  el.className='flip-emoji';
+  el.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),900);
+}
+
+function spawnConfetti(){
+  for(let i=0;i<40;i++){
+    const p=document.createElement('div');
+    p.className='confetti-piece';
+    p.textContent=confettiEmojis[Math.floor(Math.random()*confettiEmojis.length)];
+    p.style.left=Math.random()*100+'%';
+    p.style.animationDuration=(2+Math.random()*3)+'s';
+    p.style.animationDelay=(Math.random()*1.5)+'s';
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(),5500);
+  }
+}
+
+function endGame(){
+  clearInterval(timerInterval);
+  const correct=gameLog.filter(g=>g.wasCorrect).length;
+  const pct=correct/TOTAL;
+  let stars,msg;
+  if(correct>=10){stars='⭐⭐⭐';msg='Ξέρεις ΟΛΟΥΣ τους φίλους μας!';}
+  else if(correct>=8){stars='⭐⭐⭐';msg='Σχεδόν τέλεια! Μπράβο!';}
+  else if(correct>=6){stars='⭐⭐';msg='Καλά τα πας! Λίγο ακόμα!';}
+  else if(correct>=4){stars='⭐';msg='Θέλει λίγο διάβασμα ακόμα...';}
+  else{stars='🐚';msg='Πρέπει να πας πιο συχνά Γαλαξίδι!';}
+  document.getElementById('resultsScore').textContent=score;
+  document.getElementById('resultsStars').textContent=stars;
+  document.getElementById('resultsMsg').textContent=`${player==='Ajax'?'Έντα':player}, ${msg}`;
+  document.getElementById('resultsCorrect').textContent=`✅ ${correct}/${TOTAL} σωστές`;
+  document.getElementById('resultsStreak').textContent=`🔥 Μέγιστο streak: ${maxStreak}`;
+  const hsKey='galaxidi-friends-hs-'+player;
+  const prevHS=parseInt(localStorage.getItem(hsKey)||'0');
+  const newRecordEl=document.getElementById('newRecord');
+  if(score>prevHS){localStorage.setItem(hsKey,score);newRecordEl.classList.add('visible');}
+  else{newRecordEl.classList.remove('visible');}
+  if(pct>=0.8){sndVictory();setTimeout(spawnConfetti,300);}
+  else if(correct>=6) sndCorrect();
+  else sndWrong();
+  showScreen('resultsScreen');
+}
+
+function showReview(){
+  sndClick();
+  const list=document.getElementById('reviewList');
+  list.innerHTML='';
+  gameLog.forEach((g,i)=>{
+    const item=document.createElement('div');
+    item.className='review-item'+(g.wasCorrect?' correct-review':'');
+    item.innerHTML=`
+      <div class="review-q">${i+1}. ${g.q}</div>
+      <div class="review-your">${g.wasCorrect?'✅':'❌'} Απάντησες: ${g.given}</div>
+      ${!g.wasCorrect?`<div class="review-correct">✅ Σωστό: ${g.correct}</div>`:''}
+      <div class="review-explain">💡 ${g.explanation}</div>`;
+    list.appendChild(item);
+  });
+  showScreen('reviewScreen');
+}
+
+function backToResults(){sndClick();showScreen('resultsScreen');}
+function restartGame(){sndClick();startGame();}
+function goHome(){
+  sndClick(); player=null;
+  document.querySelectorAll('.player-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('startBtn').classList.remove('ready');
+  document.getElementById('highscoreDisplay').textContent='';
+  showScreen('startScreen');
+}
+
+initParticles();
+</script>
+</body>
+</html>

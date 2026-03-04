@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lord of the Rings Quiz - Ajax & Clio!</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    background: #0a0f1a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Fantasy emerald/gold/purple sky */
+  .sky {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(180deg,
+      #0a0a1a 0%,
+      #12102a 10%,
+      #1a1540 20%,
+      #2a1a50 30%,
+      #3a2060 38%,
+      #2a3050 46%,
+      #1a4040 54%,
+      #1a5538 62%,
+      #2a6a30 70%,
+      #1a4a30 80%,
+      #0f2a20 90%,
+      #0a1510 100%);
+    z-index: 0;
+  }
+
+  /* Glowing magic orb (moon/palantir) */
+  .sun {
+    position: fixed;
+    top: 15%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffffffd0 0%, #ffd700 25%, #b8860b40 60%, transparent 100%);
+    box-shadow: 0 0 60px rgba(255,215,0,0.4), 0 0 120px rgba(255,215,0,0.2), 0 0 200px rgba(76,175,80,0.15);
+    z-index: 1;
+    animation: sunPulse 5s ease-in-out infinite;
+  }
+  @keyframes sunPulse {
+    0%, 100% { box-shadow: 0 0 60px rgba(255,215,0,0.4), 0 0 120px rgba(255,215,0,0.2); }
+    50% { box-shadow: 0 0 80px rgba(255,215,0,0.5), 0 0 160px rgba(255,215,0,0.3); }
+  }
+
+  /* Mountain silhouettes */
+  .mountain {
+    position: fixed;
+    z-index: 2;
+    font-size: 90px;
+    opacity: 0.15;
+    filter: brightness(0.2);
+  }
+  .mountain-left { left: 2%; bottom: 18%; }
+  .mountain-right { right: 3%; bottom: 20%; font-size: 70px; }
+
+  /* Tower silhouettes */
+  .tower-sil {
+    position: fixed;
+    z-index: 2;
+    opacity: 0.1;
+    filter: brightness(0.15);
+    font-size: 55px;
+  }
+  .tower-left { left: 14%; bottom: 20%; transform: rotate(-3deg); }
+  .tower-right { right: 12%; bottom: 22%; font-size: 45px; }
+
+  /* Floating magical particles (fireflies/sparks) */
+  .firefly {
+    position: fixed;
+    z-index: 2;
+    font-size: 10px;
+    opacity: 0.4;
+    animation: fireflyFloat ease-in-out infinite;
+  }
+  @keyframes fireflyFloat {
+    0%, 100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.2; }
+    25% { transform: translateY(-20px) translateX(10px) scale(1.3); opacity: 0.6; }
+    50% { transform: translateY(-10px) translateX(-8px) scale(0.8); opacity: 0.4; }
+    75% { transform: translateY(-25px) translateX(5px) scale(1.1); opacity: 0.5; }
+  }
+
+  /* Misty forest floor */
+  .ocean {
+    position: fixed;
+    bottom: 0; left: 0;
+    width: 100%; height: 20%;
+    z-index: 1;
+    overflow: hidden;
+  }
+  .ocean-base {
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(180deg, rgba(15,40,20,0.4) 0%, #0a1510 100%);
+  }
+
+  /* Mist waves */
+  .wave {
+    position: absolute;
+    width: 200%;
+    height: 50px;
+    left: -50%;
+    animation: waveRoll linear infinite;
+  }
+  .wave svg { width: 100%; height: 100%; }
+  .wave1 { bottom: 75%; animation-duration: 12s; opacity: 0.08; }
+  .wave2 { bottom: 55%; animation-duration: 15s; opacity: 0.12; animation-delay: -3s; }
+  .wave3 { bottom: 35%; animation-duration: 10s; opacity: 0.15; animation-delay: -5s; }
+  .wave4 { bottom: 15%; animation-duration: 13s; opacity: 0.18; animation-delay: -1s; }
+  .wave5 { bottom: 0%; animation-duration: 9s; opacity: 0.2; animation-delay: -4s; }
+  @keyframes waveRoll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(50%); }
+  }
+
+  /* Floating fantasy items */
+  .float-item {
+    position: fixed;
+    z-index: 2;
+    font-size: 26px;
+    opacity: 0.18;
+    animation: floatItem ease-in-out infinite;
+  }
+  @keyframes floatItem {
+    0%, 100% { transform: translateY(0) rotate(-3deg); }
+    50% { transform: translateY(-12px) rotate(3deg); }
+  }
+
+  /* Screen flash overlay */
+  .screen-flash {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .screen-flash.correct { background: radial-gradient(circle, rgba(76,175,80,0.3), transparent 70%); opacity: 1; }
+  .screen-flash.wrong { background: radial-gradient(circle, rgba(229,57,53,0.3), transparent 70%); opacity: 1; }
+  .screen-flash.streak { background: radial-gradient(circle, rgba(255,215,0,0.4), transparent 70%); opacity: 1; }
+
+  /* Main content */
+  .game-container {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 620px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  h1 {
+    font-family: 'Fredoka One', cursive;
+    font-size: 2em;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(255,215,0,0.6), 0 0 30px rgba(76,175,80,0.3);
+    margin: 15px 0 5px;
+    text-align: center;
+    letter-spacing: 2px;
+  }
+
+  .subtitle {
+    font-size: 1.1em;
+    color: #c0d080;
+    text-shadow: 0 0 10px rgba(200,208,128,0.4);
+    margin-bottom: 10px;
+  }
+
+  /* Score bar */
+  .score-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 10px 20px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,215,0,0.15);
+    border-radius: 50px;
+    margin-bottom: 10px;
+    color: white;
+    font-weight: 900;
+    font-size: 1.05em;
+    backdrop-filter: blur(8px);
+  }
+  .score-bar .stars-area { font-size: 1.3em; letter-spacing: 2px; }
+
+  /* Quest progress bar */
+  .wave-progress {
+    width: 100%;
+    height: 36px;
+    background: rgba(76,175,80,0.15);
+    border-radius: 18px;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(76,175,80,0.25);
+  }
+  .wave-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4caf50, #ffd700, #7c4dff);
+    border-radius: 18px;
+    transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    min-width: 40px;
+  }
+  .wave-progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 200%; height: 100%;
+    background: repeating-linear-gradient(90deg,
+      transparent 0px,
+      rgba(255,255,255,0.1) 10px,
+      transparent 20px);
+    animation: waveShimmer 1.5s linear infinite;
+  }
+  @keyframes waveShimmer {
+    0% { transform: translateX(-50%); }
+    100% { transform: translateX(0); }
+  }
+  .surfboard-rider {
+    position: absolute;
+    right: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 22px;
+    z-index: 2;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+  }
+
+  /* Timer bar */
+  .timer-bar-container {
+    width: 100%;
+    height: 5px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 3px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  .timer-bar {
+    height: 100%;
+    width: 100%;
+    border-radius: 3px;
+    transition: width 0.1s linear, background-color 0.3s;
+    background: #4caf50;
+  }
+
+  /* Question card */
+  .question-card {
+    background: rgba(10, 15, 20, 0.82);
+    border: 1px solid rgba(255,215,0,0.12);
+    border-radius: 24px;
+    padding: 25px;
+    width: 100%;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    animation: cardEnter 0.4s ease-out;
+  }
+  @keyframes cardEnter {
+    0% { opacity: 0; transform: translateY(20px) scale(0.95); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* Question type badge */
+  .q-type-badge {
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 4px 14px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+  .badge-character { background: linear-gradient(90deg, #ffd700, #b8860b); color: #1a1000; }
+  .badge-quote { background: linear-gradient(90deg, #7c4dff, #651fff); color: white; }
+  .badge-plot { background: linear-gradient(90deg, #4caf50, #2e7d32); color: white; }
+  .badge-truefalse { background: linear-gradient(90deg, #26a69a, #00897b); color: white; }
+
+  /* Character display */
+  .character-display {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+    position: relative;
+    overflow: visible;
+  }
+  .char-ring {
+    position: absolute;
+    top: -6px; left: -6px;
+    width: calc(100% + 12px);
+    height: calc(100% + 12px);
+    border-radius: 50%;
+    border: 2px solid transparent;
+    border-top-color: rgba(255,215,0,0.8);
+    border-right-color: rgba(76,175,80,0.5);
+    animation: ringRotate 3s linear infinite;
+  }
+  .char-ring2 {
+    position: absolute;
+    top: -10px; left: -10px;
+    width: calc(100% + 20px);
+    height: calc(100% + 20px);
+    border-radius: 50%;
+    border: 1px solid transparent;
+    border-bottom-color: rgba(124,77,255,0.4);
+    border-left-color: rgba(255,215,0,0.3);
+    animation: ringRotate 5s linear infinite reverse;
+  }
+  @keyframes ringRotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .char-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    border: 3px solid rgba(255,215,0,0.4);
+    box-shadow: 0 0 30px rgba(255,215,0,0.2), inset 0 0 40px rgba(0,0,0,0.4);
+  }
+  .char-emoji {
+    font-size: 65px;
+    z-index: 2;
+    filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));
+    animation: emojiEntrance 0.5s ease-out;
+  }
+  @keyframes emojiEntrance {
+    0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+    60% { transform: scale(1.15) rotate(3deg); }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+  .char-detail {
+    font-size: 9px;
+    color: rgba(255,255,255,0.8);
+    font-weight: 900;
+    text-align: center;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    z-index: 2;
+  }
+
+  /* Quote display */
+  .quote-display {
+    font-size: 1.2em;
+    color: #d0c8a0;
+    font-style: italic;
+    text-align: center;
+    margin: 10px 0 15px;
+    padding: 15px 20px;
+    border-left: 3px solid rgba(255,215,0,0.5);
+    background: rgba(255,215,0,0.06);
+    border-radius: 0 12px 12px 0;
+    line-height: 1.6;
+    max-width: 95%;
+  }
+  .quote-display::before { content: '\201C'; font-size: 1.8em; color: rgba(255,215,0,0.4); margin-right: 4px; }
+  .quote-display::after { content: '\201D'; font-size: 1.8em; color: rgba(255,215,0,0.4); margin-left: 4px; }
+
+  .question-text {
+    font-size: 1.15em;
+    color: #d0e0c0;
+    margin-bottom: 15px;
+    text-align: center;
+    line-height: 1.5;
+    max-width: 95%;
+    font-weight: 900;
+  }
+
+  .hint-text {
+    font-size: 0.92em;
+    color: #90b0a0;
+    font-style: italic;
+    margin-bottom: 15px;
+    min-height: 22px;
+    text-align: center;
+    line-height: 1.5;
+    max-width: 90%;
+  }
+
+  /* Divider */
+  .divider {
+    width: 70%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,215,0,0.4), rgba(76,175,80,0.4), transparent);
+    margin: 8px 0 15px;
+    position: relative;
+  }
+  .divider::after {
+    content: '⚔️';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 16px;
+  }
+
+  /* Answer buttons */
+  .answers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .answer-btn {
+    padding: 16px 10px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.05em;
+    font-weight: 900;
+    border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(10,20,15,0.85), rgba(20,35,25,0.85));
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #d0e0c0;
+    position: relative;
+    overflow: hidden;
+  }
+  .answer-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,215,0,0.1), transparent);
+    transition: left 0.4s;
+  }
+  .answer-btn:hover::before { left: 100%; }
+  .answer-btn:hover {
+    transform: scale(1.04);
+    border-color: rgba(255,215,0,0.4);
+    box-shadow: 0 0 20px rgba(255,215,0,0.12);
+  }
+  .answer-btn:active { transform: scale(0.97); }
+  .answer-btn.correct {
+    background: linear-gradient(135deg, rgba(46,125,50,0.8), rgba(76,175,80,0.6));
+    border-color: #66bb6a;
+    color: white;
+    box-shadow: 0 0 30px rgba(76,175,80,0.4);
+    animation: correctPop 0.5s ease;
+  }
+  .answer-btn.wrong {
+    background: linear-gradient(135deg, rgba(183,28,28,0.7), rgba(229,57,53,0.5));
+    border-color: #ef5350;
+    color: white;
+    box-shadow: 0 0 30px rgba(229,57,53,0.4);
+    animation: shake 0.4s ease;
+  }
+  @keyframes correctPop {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
+
+  /* Hint button */
+  .hint-btn {
+    margin-top: 10px;
+    padding: 8px 22px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.9em;
+    font-weight: 700;
+    border: 1px solid rgba(255,215,0,0.2);
+    border-radius: 20px;
+    background: rgba(255,215,0,0.08);
+    color: #c0b060;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .hint-btn:hover {
+    background: rgba(255,215,0,0.15);
+    border-color: rgba(255,215,0,0.4);
+  }
+
+  /* Explanation box */
+  .explanation-box {
+    margin-top: 15px;
+    padding: 15px 18px;
+    background: rgba(255,215,0,0.08);
+    border: 1px solid rgba(255,215,0,0.2);
+    border-radius: 16px;
+    width: 100%;
+    display: none;
+    animation: fadeSlideUp 0.4s ease-out;
+  }
+  .explanation-box.wrong-box {
+    background: rgba(229,57,53,0.08);
+    border-color: rgba(229,57,53,0.2);
+  }
+  @keyframes fadeSlideUp {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .explanation-box .exp-label {
+    font-size: 0.85em;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .explanation-box.wrong-box .exp-label { color: #ef5350; }
+  .explanation-box:not(.wrong-box) .exp-label { color: #ffd700; }
+  .explanation-box .exp-text {
+    color: #b0c0a0;
+    font-size: 0.95em;
+    line-height: 1.5;
+  }
+  .explanation-box .exp-correct {
+    color: #66bb6a;
+    font-weight: 900;
+    margin-bottom: 5px;
+  }
+
+  /* Flip animation */
+  .flip-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 80px;
+    z-index: 60;
+    pointer-events: none;
+    display: none;
+  }
+  .flip-container.active {
+    display: block;
+    animation: flipSpin 0.7s ease-out forwards;
+  }
+  @keyframes flipSpin {
+    0% { transform: translate(-50%, -50%) rotateY(0deg) scale(0.5); opacity: 0; }
+    30% { transform: translate(-50%, -50%) rotateY(180deg) scale(1.5); opacity: 1; }
+    60% { transform: translate(-50%, -50%) rotateY(360deg) scale(1.2); opacity: 1; }
+    100% { transform: translate(-50%, -50%) rotateY(360deg) scale(0.3) translateY(-100px); opacity: 0; }
+  }
+
+  /* Sparkles */
+  .sparkle {
+    position: fixed;
+    z-index: 55;
+    pointer-events: none;
+    font-size: 20px;
+    animation: sparkleFloat 0.8s ease-out forwards;
+  }
+  @keyframes sparkleFloat {
+    0% { opacity: 1; transform: scale(0) translateY(0); }
+    50% { opacity: 1; transform: scale(1.2); }
+    100% { opacity: 0; transform: scale(0.3) translateY(-60px); }
+  }
+
+  /* Float points */
+  .float-points {
+    position: fixed;
+    z-index: 55;
+    pointer-events: none;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.6em;
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255,215,0,0.6);
+    animation: floatUp 1s ease-out forwards;
+  }
+  @keyframes floatUp {
+    0% { opacity: 1; transform: translateY(0) scale(0.5); }
+    30% { opacity: 1; transform: translateY(-20px) scale(1.2); }
+    100% { opacity: 0; transform: translateY(-80px) scale(0.8); }
+  }
+
+  /* Streak indicator */
+  .streak-indicator {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 40;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.2em;
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255,215,0,0.6);
+    display: none;
+    animation: streakPulse 0.8s ease infinite;
+  }
+  @keyframes streakPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+
+  /* Volume button */
+  .volume-btn {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 40;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,215,0,0.2);
+    background: rgba(10,15,10,0.6);
+    backdrop-filter: blur(8px);
+    color: #c0b060;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Result overlay */
+  .result-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 100;
+    background: rgba(5,10,5,0.85);
+    backdrop-filter: blur(10px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+  }
+  .result-overlay.active { display: flex; }
+
+  .result-card {
+    background: rgba(10,20,15,0.9);
+    border: 1px solid rgba(255,215,0,0.2);
+    border-radius: 28px;
+    padding: 35px;
+    max-width: 500px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    backdrop-filter: blur(16px);
+    animation: resultEnter 0.6s ease-out;
+  }
+  @keyframes resultEnter {
+    0% { opacity: 0; transform: scale(0.8) translateY(40px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .result-emoji { font-size: 70px; margin-bottom: 15px; }
+  .result-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.8em;
+    color: #ffd700;
+    text-shadow: 0 0 15px rgba(255,215,0,0.4);
+    margin-bottom: 10px;
+  }
+  .result-score {
+    font-size: 3em;
+    font-weight: 900;
+    color: white;
+    margin: 10px 0;
+  }
+  .result-stars { font-size: 2.5em; margin: 10px 0; }
+  .result-message {
+    color: #a0b090;
+    font-size: 1.05em;
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+
+  .new-record {
+    display: none;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.3em;
+    color: #ffd700;
+    text-shadow: 0 0 20px rgba(255,215,0,0.6);
+    animation: newRecordGlow 1s ease infinite;
+    margin-bottom: 10px;
+  }
+  @keyframes newRecordGlow {
+    0%, 100% { text-shadow: 0 0 20px rgba(255,215,0,0.6); transform: scale(1); }
+    50% { text-shadow: 0 0 30px rgba(255,215,0,0.8), 0 0 60px rgba(255,215,0,0.4); transform: scale(1.05); }
+  }
+
+  .highscore-display {
+    color: #a0a080;
+    font-size: 0.95em;
+    margin: 8px 0;
+  }
+
+  .play-again-btn, .review-btn {
+    padding: 14px 30px;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.1em;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    margin: 8px;
+    transition: all 0.2s;
+  }
+  .play-again-btn {
+    background: linear-gradient(135deg, #4caf50, #2e7d32);
+    color: white;
+    box-shadow: 0 4px 20px rgba(76,175,80,0.3);
+  }
+  .play-again-btn:hover { transform: scale(1.05); box-shadow: 0 6px 25px rgba(76,175,80,0.4); }
+  .review-btn {
+    background: rgba(255,215,0,0.1);
+    border: 1px solid rgba(255,215,0,0.3);
+    color: #c0b060;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 900;
+    font-size: 0.95em;
+  }
+  .review-btn:hover { background: rgba(255,215,0,0.2); }
+
+  /* Review list */
+  .review-list {
+    display: none;
+    text-align: left;
+    margin-top: 15px;
+    max-height: 300px;
+    overflow-y: auto;
+    width: 100%;
+  }
+  .review-item {
+    background: rgba(229,57,53,0.08);
+    border: 1px solid rgba(229,57,53,0.15);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .review-item .ri-q { color: #d0c0a0; font-weight: 900; margin-bottom: 5px; }
+  .review-item .ri-wrong { color: #ef5350; font-size: 0.9em; }
+  .review-item .ri-correct { color: #66bb6a; font-size: 0.9em; }
+  .review-item .ri-exp { color: #90a080; font-size: 0.85em; margin-top: 5px; font-style: italic; }
+
+  /* Start screen */
+  .start-screen {
+    text-align: center;
+    animation: fadeSlideUp 0.6s ease-out;
+  }
+  .game-screen { display: none; }
+
+  /* Player select */
+  .player-select {
+    display: flex;
+    gap: 15px;
+    margin: 15px 0;
+    justify-content: center;
+  }
+  .player-btn {
+    padding: 15px 30px;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.2em;
+    border: 2px solid rgba(255,215,0,0.2);
+    border-radius: 20px;
+    background: rgba(255,215,0,0.06);
+    color: #d0c080;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .player-btn:hover {
+    transform: scale(1.05);
+    border-color: rgba(255,215,0,0.5);
+    background: rgba(255,215,0,0.12);
+  }
+  .player-btn.selected {
+    border-color: #ffd700;
+    background: rgba(255,215,0,0.15);
+    box-shadow: 0 0 20px rgba(255,215,0,0.2);
+  }
+
+  .play-btn {
+    padding: 16px 40px;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.3em;
+    border: none;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #4caf50, #2e7d32);
+    color: white;
+    cursor: pointer;
+    margin-top: 12px;
+    box-shadow: 0 4px 20px rgba(76,175,80,0.3);
+    transition: all 0.2s;
+    display: none;
+  }
+  .play-btn:hover { transform: scale(1.05); box-shadow: 0 6px 25px rgba(76,175,80,0.4); }
+
+  /* Confetti */
+  .confetti-piece {
+    position: fixed;
+    z-index: 200;
+    font-size: 24px;
+    pointer-events: none;
+    animation: confettiFall linear forwards;
+  }
+  @keyframes confettiFall {
+    0% { transform: translateY(-10vh) rotate(0deg) scale(1); opacity: 1; }
+    70% { opacity: 1; }
+    100% { transform: translateY(110vh) rotate(720deg) scale(0.5); opacity: 0; }
+  }
+
+  /* Responsive */
+  @media (max-width: 500px) {
+    h1 { font-size: 1.5em; }
+    .question-card { padding: 18px; }
+    .answer-btn { padding: 12px 8px; font-size: 0.95em; }
+    .char-inner { }
+    .character-display { width: 130px; height: 130px; }
+    .char-emoji { font-size: 50px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Background -->
+<div class="sky"></div>
+<div class="sun"></div>
+<div class="mountain mountain-left">🏔️</div>
+<div class="mountain mountain-right">⛰️</div>
+<div class="tower-sil tower-left">🏰</div>
+<div class="tower-sil tower-right">🗼</div>
+
+<div class="ocean">
+  <div class="ocean-base"></div>
+  <div class="wave wave1"><svg viewBox="0 0 1440 50" preserveAspectRatio="none"><path d="M0,25 C360,0 720,50 1080,25 C1260,12 1350,38 1440,25 L1440,50 L0,50 Z" fill="rgba(76,175,80,0.3)"/></svg></div>
+  <div class="wave wave2"><svg viewBox="0 0 1440 50" preserveAspectRatio="none"><path d="M0,30 C240,10 480,45 720,25 C960,5 1200,40 1440,20 L1440,50 L0,50 Z" fill="rgba(76,175,80,0.25)"/></svg></div>
+  <div class="wave wave3"><svg viewBox="0 0 1440 50" preserveAspectRatio="none"><path d="M0,20 C300,40 600,10 900,30 C1100,42 1300,15 1440,28 L1440,50 L0,50 Z" fill="rgba(76,175,80,0.2)"/></svg></div>
+  <div class="wave wave4"><svg viewBox="0 0 1440 50" preserveAspectRatio="none"><path d="M0,35 C200,15 400,45 600,25 C800,5 1000,40 1440,18 L1440,50 L0,50 Z" fill="rgba(76,175,80,0.18)"/></svg></div>
+  <div class="wave wave5"><svg viewBox="0 0 1440 50" preserveAspectRatio="none"><path d="M0,15 C360,40 720,10 1080,35 C1260,42 1350,20 1440,30 L1440,50 L0,50 Z" fill="rgba(76,175,80,0.15)"/></svg></div>
+</div>
+
+<div class="screen-flash" id="screenFlash"></div>
+<div class="streak-indicator" id="streakIndicator">🔥 x<span id="streakCount">0</span></div>
+<div class="flip-container" id="flipContainer">🐉</div>
+<button class="volume-btn" id="volumeBtn" onclick="toggleVolume()">🔊</button>
+
+<div class="game-container">
+  <!-- Start Screen -->
+  <div class="start-screen" id="startScreen">
+    <h1>🏰 Lord of the Rings 🐉</h1>
+    <div class="subtitle">Ο Άρχοντας των Δαχτυλιδιών — Quiz!</div>
+    <p style="color:#90a080; margin:10px 0;">Διάλεξε παίκτη:</p>
+    <div class="player-select">
+      <button class="player-btn" onclick="selectPlayer('Ajax')">⚔️ Ajax</button>
+      <button class="player-btn" onclick="selectPlayer('Clio')">🧝‍♀️ Clio</button>
+    </div>
+    <div class="highscore-display" id="startHighscore"></div>
+    <button class="play-btn" id="playBtn" onclick="startGame()">Ξεκίνα το Ταξίδι! 🗺️</button>
+  </div>
+
+  <!-- Game Screen -->
+  <div class="game-screen" id="gameScreen">
+    <h1 id="gameTitle">🏰 Lord of the Rings 🐉</h1>
+    <div class="timer-bar-container"><div class="timer-bar" id="timerBar"></div></div>
+    <div class="wave-progress">
+      <div class="wave-progress-fill" id="progressFill" style="width: 6.67%;">
+        <span class="surfboard-rider">🧙</span>
+      </div>
+    </div>
+    <div class="score-bar">
+      <span id="scoreDisplay">Πόντοι: 0</span>
+      <span id="questionNum">1 / 15</span>
+      <span class="stars-area" id="starsArea"></span>
+    </div>
+    <div class="question-card" id="questionCard">
+      <div class="q-type-badge" id="typeBadge">ΧΑΡΑΚΤΗΡΑΣ</div>
+      <div class="character-display" id="charDisplay" style="display:none;">
+        <div class="char-ring"></div>
+        <div class="char-ring2"></div>
+        <div class="char-inner" id="charInner">
+          <div class="char-emoji" id="charEmoji">🧙</div>
+          <div class="char-detail" id="charDetail"></div>
+        </div>
+      </div>
+      <div class="quote-display" id="quoteDisplay" style="display:none;"></div>
+      <div class="question-text" id="questionText"></div>
+      <div class="hint-text" id="hintText"></div>
+      <div class="divider"></div>
+      <div class="answers" id="answers"></div>
+      <button class="hint-btn" id="hintBtn" onclick="useHint()">💡 Βοήθεια</button>
+      <div class="explanation-box" id="explanationBox">
+        <div class="exp-label" id="expLabel">💡 Το ήξερες;</div>
+        <div class="exp-correct" id="expCorrect"></div>
+        <div class="exp-text" id="expText"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Result Overlay -->
+<div class="result-overlay" id="resultOverlay">
+  <div class="result-card">
+    <div class="result-emoji" id="resultEmoji">🏆</div>
+    <div class="result-title" id="resultTitle">Τέλος!</div>
+    <div class="new-record" id="newRecord">🌟 Νέο Ρεκόρ! 🌟</div>
+    <div class="result-score" id="resultScore">0 / 15</div>
+    <div class="result-stars" id="resultStars"></div>
+    <div class="result-message" id="resultMessage"></div>
+    <div class="highscore-display" id="resultHighscore"></div>
+    <button class="play-again-btn" onclick="restartGame()">Ξαναπαίξε! 🗡️</button>
+    <br>
+    <button class="review-btn" id="reviewBtn" onclick="toggleReview()">📜 Δες τα Λάθη</button>
+    <div class="review-list" id="reviewList"></div>
+  </div>
+</div>
+
+<script>
+// ====== SOUND ENGINE (Web Audio API) ======
+let audioCtx = null;
+let soundEnabled = true;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playNote(freq, duration, type = 'sine', volume = 0.12, delay = 0) {
+  if (!soundEnabled) return;
+  const ctx = getAudioCtx();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(volume, ctx.currentTime + delay);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(ctx.currentTime + delay);
+  osc.stop(ctx.currentTime + delay + duration);
+}
+
+function playCorrect() {
+  [523, 659, 784, 1047, 1319].forEach((f, i) => playNote(f, 0.15, 'sine', 0.1, i * 0.07));
+}
+function playWrong() {
+  playNote(330, 0.25, 'sawtooth', 0.08, 0);
+  playNote(260, 0.3, 'sawtooth', 0.08, 0.12);
+  playNote(200, 0.35, 'sawtooth', 0.06, 0.24);
+}
+function playStreak() {
+  [523, 587, 659, 784, 880, 988, 1047, 1319].forEach((f, i) => playNote(f, 0.12, 'sine', 0.09, i * 0.06));
+}
+function playClick() { playNote(800, 0.06, 'sine', 0.06); }
+function playNewRound() {
+  [440, 550, 660].forEach((f, i) => playNote(f, 0.15, 'triangle', 0.05, i * 0.1));
+}
+function playGameStart() {
+  [330, 392, 440, 523, 659].forEach((f, i) => playNote(f, 0.18, 'sine', 0.08, i * 0.12));
+}
+function playVictory() {
+  [523, 587, 659, 784, 880, 988, 1047, 1175, 1319].forEach((f, i) => playNote(f, 0.2, 'sine', 0.1, i * 0.1));
+}
+function playTimeout() {
+  playNote(400, 0.3, 'square', 0.06, 0);
+  playNote(300, 0.4, 'square', 0.05, 0.15);
+}
+
+function toggleVolume() {
+  soundEnabled = !soundEnabled;
+  document.getElementById('volumeBtn').textContent = soundEnabled ? '🔊' : '🔇';
+}
+
+// ====== FLOATING MAGICAL PARTICLES ======
+function createFireflies() {
+  const emojis = ['✨', '⭐', '🌟', '💫'];
+  for (let i = 0; i < 12; i++) {
+    const el = document.createElement('div');
+    el.className = 'firefly';
+    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    el.style.left = Math.random() * 90 + 5 + '%';
+    el.style.top = Math.random() * 70 + 5 + '%';
+    el.style.animationDuration = (4 + Math.random() * 6) + 's';
+    el.style.animationDelay = -Math.random() * 5 + 's';
+    el.style.fontSize = (8 + Math.random() * 12) + 'px';
+    document.body.appendChild(el);
+  }
+  const items = ['⚔️', '💍', '🏰', '🐉', '🧝', '🗡️'];
+  const positions = [{l:'8%',t:'25%'},{l:'85%',t:'15%'},{l:'90%',t:'55%'},{l:'5%',t:'60%'},{l:'75%',t:'70%'},{l:'15%',t:'40%'}];
+  positions.forEach((p, i) => {
+    const el = document.createElement('div');
+    el.className = 'float-item';
+    el.textContent = items[i % items.length];
+    el.style.left = p.l;
+    el.style.top = p.t;
+    el.style.animationDuration = (4 + Math.random() * 4) + 's';
+    el.style.animationDelay = -Math.random() * 3 + 's';
+    document.body.appendChild(el);
+  });
+}
+createFireflies();
+
+// ====== QUESTION DATA ======
+const CHAR_QUESTIONS = [
+  {type:'char', emoji:'🧙', bg:'linear-gradient(135deg, #4a4a6a, #2a2a4a)', detail:'ΛΕΥΚΟΣ ΜΑΓΟΣ', question:'Ποιος είναι αυτός ο χαρακτήρας;', hint:'Είναι ο αρχηγός της Συντροφιάς του Δαχτυλιδιού.', hint2:'Πολέμησε τον Μπάλρογκ στη Μόρια.', answer:'Γκάνταλφ', decoys:['Σάρουμαν','Ραντάγκαστ','Έλροντ'], explanation:'Ο Γκάνταλφ (Gandalf) είναι ο σοφός μάγος που οδήγησε τη Συντροφιά. Αρχικά ήταν ο Γκρίζος και μετά έγινε ο Λευκός!'},
+  {type:'char', emoji:'🧝‍♂️', bg:'linear-gradient(135deg, #2a4a2a, #1a3a1a)', detail:'ΞΩΤΙΚΟ ΤΟΞΟΤΗΣ', question:'Ποιος είναι αυτός ο χαρακτήρας;', hint:'Είναι ξωτικό με απίστευτη ακρίβεια στο τόξο.', hint2:'Ο καλύτερος φίλος του είναι νάνος.', answer:'Λέγκολας', decoys:['Χάλντιρ','Γκλόρφιντελ','Έλροντ'], explanation:'Ο Λέγκολας (Legolas) είναι πρίγκιπας των Ξωτικών του Σκοτεινού Δάσους. Η φιλία του με τον Γκίμλι είναι θρυλική!'},
+  {type:'char', emoji:'👑', bg:'linear-gradient(135deg, #3a3a5a, #1a2040)', detail:'ΒΑΣΙΛΙΑΣ ΤΗΣ ΓΚΟΝΤΟΡ', question:'Ποιος είναι αυτός ο χαρακτήρας;', hint:'Αρχικά ήταν Δαδοφόρος γνωστός ως Στράιντερ.', hint2:'Παντρεύτηκε την Άργουεν.', answer:'Αραγκόρν', decoys:['Μπόρομιρ','Φαραμίρ','Θέοντεν'], explanation:'Ο Αραγκόρν (Aragorn) είναι ο κληρονόμος του Ισίλντουρ. Στέφθηκε Βασιλιάς Ελεσάρ μετά τη νίκη κατά του Σάουρον!'},
+  {type:'char', emoji:'🐻', bg:'linear-gradient(135deg, #5a3a2a, #3a2a1a)', detail:'ΝΑΝΟΣ ΠΟΛΕΜΙΣΤΗΣ', question:'Ποιος είναι αυτός ο χαρακτήρας;', hint:'Είναι νάνος και μέλος της Συντροφιάς.', hint2:'Ο πατέρας του πήγε στην αποστολή με τον Μπίλμπο.', answer:'Γκίμλι', decoys:['Μπάλιν','Ντουόριν','Νταΐν'], explanation:'Ο Γκίμλι (Gimli) γιος του Γκλόιν είναι ο γενναίος νάνος της Συντροφιάς. Έγινε στενός φίλος με τον Λέγκολας!'},
+  {type:'char', emoji:'🧒', bg:'linear-gradient(135deg, #3a5a3a, #2a4a2a)', detail:'ΚΟΜΙΣΤΗΣ ΔΑΧΤΥΛΙΔΙΟΥ', question:'Ποιος είναι αυτός ο χαρακτήρας;', hint:'Είναι Χόμπιτ από το Σάιρ.', hint2:'Ο θείος του του κληροδότησε το Ένα Δαχτυλίδι.', answer:'Φρόντο', decoys:['Σαμ','Μέρι','Πίπιν'], explanation:'Ο Φρόντο Μπάγκινς (Frodo Baggins) ανέλαβε τη βαριά αποστολή να καταστρέψει το Ένα Δαχτυλίδι στο Ηφαίστειο της Μοίρας!'},
+  {type:'char', emoji:'🌿', bg:'linear-gradient(135deg, #2a4a1a, #1a3a10)', detail:'ΠΙΣΤΟΣ ΦΙΛΟΣ', question:'Ποιος είναι αυτός ο χαρακτήρας;', hint:'Δεν εγκατέλειψε ποτέ τον κύριό του.', hint2:'Ήταν κηπουρός πριν γίνει ήρωας.', answer:'Σάμγουαϊζ', decoys:['Φρόντο','Μέρι','Πίπιν'], explanation:'Ο Σαμγουάιζ Γκάμτζι (Samwise Gamgee) είναι ο πιο πιστός φίλος. Χωρίς αυτόν, ο Φρόντο δεν θα τα κατάφερνε ποτέ!'},
+  {type:'char', emoji:'👁️', bg:'linear-gradient(135deg, #5a1a0a, #3a0a0a)', detail:'ΣΚΟΤΕΙΝΟΣ ΚΥΡΙΟΣ', question:'Ποιος είναι αυτός ο χαρακτήρας;', hint:'Δημιούργησε το Ένα Δαχτυλίδι.', hint2:'Το μάτι του βλέπει τα πάντα.', answer:'Σάουρον', decoys:['Μόργκοθ','Σάρουμαν','Ο Βασιλιάς Μάγισσα'], explanation:'Ο Σάουρον (Sauron) είναι ο Σκοτεινός Κύριος που σφυρηλάτησε το Ένα Δαχτυλίδι στο Ηφαίστειο Μοίρας για να κυβερνήσει τη Μέση Γη!'},
+  {type:'char', emoji:'🕷️', bg:'linear-gradient(135deg, #2a2a2a, #1a1a1a)', detail:'ΤΡΩΕΙ ΨΑΡΙΑ ΩΜΑΚΙΑ', question:'Ποιος είναι αυτός ο χαρακτήρας;', hint:'Κάποτε ήταν κάτι σαν Χόμπιτ.', hint2:'Το Δαχτυλίδι τον μεταμόρφωσε εντελώς.', answer:'Γκόλουμ', decoys:['Γκράμπ','Μπίλμπο','Ο Βασιλιάς Μάγισσα'], explanation:'Ο Γκόλουμ (Gollum), πρώην Σμέαγκολ, κρατούσε το Δαχτυλίδι 500 χρόνια. Το αποκαλούσε "Πολύτιμό μου"!'}
+];
+
+const QUOTE_QUESTIONS = [
+  {type:'quote', quote:'You shall not pass!', question:'Ποιος το είπε;', answer:'Γκάνταλφ', decoys:['Αραγκόρν','Θέοντεν','Μπόρομιρ'], explanation:'Ο Γκάνταλφ φώναξε αυτή τη θρυλική ατάκα στη Γέφυρα του Κχαζάντ-Ντουμ, αντιμετωπίζοντας τον Μπάλρογκ!', hint2:'Ειπώθηκε πάνω σε μια γέφυρα στα Ορυχεία της Μόρια.'},
+  {type:'quote', quote:'My precious...', question:'Ποιος το είπε;', answer:'Γκόλουμ', decoys:['Σάουρον','Μπίλμπο','Φρόντο'], explanation:'Ο Γκόλουμ αποκαλεί το Ένα Δαχτυλίδι "Πολύτιμό μου" (My Precious). Η εμμονή του κράτησε 500 χρόνια!', hint2:'Αυτός ο χαρακτήρας ζούσε σε μια σπηλιά κάτω από ένα βουνό.'},
+  {type:'quote', quote:'Even the smallest person can change the course of the future.', question:'Ποιος το είπε;', answer:'Γκαλάντριελ', decoys:['Γκάνταλφ','Έλροντ','Άργουεν'], explanation:'Η Γκαλάντριελ (Galadriel), η σοφή Ξωτική Βασίλισσα του Λόθλοριεν, είπε αυτά τα εμπνευσμένα λόγια στον Φρόντο!', hint2:'Είναι η κυρία του Χρυσού Δάσους.'},
+  {type:'quote', quote:'One does not simply walk into Mordor.', question:'Ποιος το είπε;', answer:'Μπόρομιρ', decoys:['Αραγκόρν','Γκάνταλφ','Φαραμίρ'], explanation:'Ο Μπόρομιρ (Boromir) είπε αυτή τη φράση στο Συμβούλιο του Έλροντ, εξηγώντας πόσο επικίνδυνη είναι η Μόρντορ!', hint2:'Ο αδερφός του Φαραμίρ.'},
+  {type:'quote', quote:'All we have to decide is what to do with the time that is given us.', question:'Ποιος το είπε;', answer:'Γκάνταλφ', decoys:['Μπίλμπο','Αραγκόρν','Γκαλάντριελ'], explanation:'Ο Γκάνταλφ είπε αυτά τα σοφά λόγια στον Φρόντο στα Ορυχεία της Μόρια, δίνοντάς του κουράγιο!', hint2:'Ειπώθηκε μέσα σε σκοτεινά ορυχεία.'}
+];
+
+const PLOT_QUESTIONS = [
+  {type:'plot', question:'Πόσα μέλη είχε η Συντροφιά του Δαχτυλιδιού;', hint:'Υπολόγισε: 4 Χόμπιτ + 2 Άνθρωποι + 1 Ξωτικό + 1 Νάνος + 1 Μάγος.', hint2:'Ξεκίνησαν από το Ρίβεντελ.', answer:'9', decoys:['7','8','12'], explanation:'Η Συντροφιά είχε 9 μέλη: Φρόντο, Σαμ, Μέρι, Πίπιν, Αραγκόρν, Μπόρομιρ, Λέγκολας, Γκίμλι και Γκάνταλφ!'},
+  {type:'plot', question:'Πού σφυρηλατήθηκε το Ένα Δαχτυλίδι;', hint:'Είναι ένα ηφαίστειο στη Μόρντορ.', hint2:'Εκεί πρέπει να καταστραφεί.', answer:'Ηφαίστειο Μοίρας', decoys:['Ισένγκαρντ','Μπαράντ-Ντουρ','Μίνας Μόργκουλ'], explanation:'Το Ένα Δαχτυλίδι σφυρηλατήθηκε στο Ηφαίστειο Μοίρας (Mount Doom) μέσα στη Μόρντορ. Μόνο εκεί μπορεί να καταστραφεί!'},
+  {type:'plot', question:'Πώς λέγεται το σπαθί του Αραγκόρν;', hint:'Ξανασφυρηλατήθηκε από τα κομμάτια του Νάρσιλ.', hint2:'Το όνομά του σημαίνει "Φλόγα της Δύσης".', answer:'Αντούριλ', decoys:['Γκλάμντρινγκ','Στινγκ','Νάρσιλ'], explanation:'Το Αντούριλ (Andúril) ξανασφυρηλατήθηκε από τα κομμάτια του Νάρσιλ, του σπαθιού που έκοψε το Δαχτυλίδι από τον Σάουρον!'},
+  {type:'plot', question:'Ποια πόλη είναι η πρωτεύουσα της Γκόντορ;', hint:'Είναι γνωστή ως η Λευκή Πόλη.', hint2:'Εκεί στέφθηκε βασιλιάς ο Αραγκόρν.', answer:'Μίνας Τίριθ', decoys:['Μίνας Μόργκουλ','Οσγκίλιαθ','Ντολ Αμρόθ'], explanation:'Η Μίνας Τίριθ (Minas Tirith) είναι η εντυπωσιακή Λευκή Πόλη με τα 7 επίπεδα, πρωτεύουσα της Γκόντορ!'},
+  {type:'plot', question:'Τι πλάσμα σκότωσε η Έογουιν στη Μάχη των Πεδίων Πελενόρ;', hint:'Κανένας άνδρας δεν μπορούσε να το σκοτώσει.', hint2:'Ήταν ο αρχηγός των Ναζγκούλ.', answer:'Τον Βασιλιά Μάγισσα', decoys:['Έναν Μπάλρογκ','Ένα Τρολ','Τον Σάρουμαν'], explanation:'Η Έογουιν (Éowyn) σκότωσε τον Βασιλιά Μάγισσα του Άνγκμαρ λέγοντας "Δεν είμαι άνδρας!" — μια από τις πιο επικές στιγμές!'},
+  {type:'plot', question:'Πώς λέγεται η πατρίδα των Χόμπιτ;', hint:'Είναι ένα ειρηνικό μέρος με πράσινους λόφους.', hint2:'Ο Μπίλμπο και ο Φρόντο ζουν στο Μπαγκ Εντ.', answer:'Σάιρ', decoys:['Μπρί','Ρίβεντελ','Λόθλοριεν'], explanation:'Το Σάιρ (The Shire) είναι η ειρηνική πατρίδα των Χόμπιτ με τους πράσινους λόφους, τις στρογγυλές πόρτες και τα πολλά γεύματα!'},
+  {type:'plot', question:'Ποιος δίνει στον Φρόντο το μιθρίλ θώρακα;', hint:'Τον βρήκε στο Μοναχικό Βουνό.', hint2:'Είναι θείος του Φρόντο.', answer:'Μπίλμπο', decoys:['Γκάνταλφ','Γκίμλι','Έλροντ'], explanation:'Ο Μπίλμπο (Bilbo) δίνει στον Φρόντο τον πανάκριβο μιθρίλ θώρακα στο Ρίβεντελ. Αυτός ο θώρακας του σώζει τη ζωή στη Μόρια!'},
+  {type:'plot', question:'Πόσα Δαχτυλίδια Δύναμης φτιάχτηκαν για τους Βασιλιάδες των Ανθρώπων;', hint:'Ήταν θνητοί που έγιναν Ναζγκούλ.', hint2:'Ο στίχος λέει "Nine for Mortal Men doomed to die".', answer:'9', decoys:['7','3','5'], explanation:'Εννέα Δαχτυλίδια δόθηκαν στους Βασιλιάδες των Ανθρώπων. Ο Σάουρον τους διέφθειρε και έγιναν οι Ναζγκούλ — σκοτεινοί ιππότες!'}
+];
+
+const TF_QUESTIONS = [
+  {type:'tf', question:'Ο Λέγκολας είναι Νάνος.', answer:'Ψέμα', decoys:['Αλήθεια'], explanation:'Ο Λέγκολας είναι Ξωτικό, όχι Νάνος! Είναι πρίγκιπας του Σκοτεινού Δάσους (Mirkwood) και γιος του Βασιλιά Θράντουιλ.', hint2:'Σκέψου ποια φυλή χρησιμοποιεί τόξα.'},
+  {type:'tf', question:'Το Ένα Δαχτυλίδι μπορεί να κάνει τον κάτοχό του αόρατο.', answer:'Αλήθεια', decoys:['Ψέμα'], explanation:'Ναι! Όταν ένας θνητός φοράει το Ένα Δαχτυλίδι, γίνεται αόρατος — αλλά γίνεται ορατός στον Σάουρον και τους Ναζγκούλ!', hint2:'Ο Μπίλμπο το ανακάλυψε στη σπηλιά του Γκόλουμ.'},
+  {type:'tf', question:'Ο Σάρουμαν ήταν πάντα κακός.', answer:'Ψέμα', decoys:['Αλήθεια'], explanation:'Ο Σάρουμαν (Saruman) ήταν αρχικά σοφός μάγος και αρχηγός του τάγματος. Η δύναμη και η φιλοδοξία τον διέφθειραν με τον καιρό!', hint2:'Κάποτε ήταν ο αρχηγός του τάγματος των Ίσταρι (μάγων).'},
+  {type:'tf', question:'Ο Φρόντο πετάει το Δαχτυλίδι μόνος του στο ηφαίστειο.', answer:'Ψέμα', decoys:['Αλήθεια'], explanation:'Ο Φρόντο δεν μπόρεσε να αποχωριστεί το Δαχτυλίδι στο τέλος! Ο Γκόλουμ του το πήρε δαγκώνοντας το δάχτυλό του και μετά έπεσε στη λάβα!', hint2:'Κάποιος άλλος "βοήθησε" στο τέλος.'},
+  {type:'tf', question:'Τα Ξωτικά στη Μέση Γη είναι αθάνατα.', answer:'Αλήθεια', decoys:['Ψέμα'], explanation:'Ναι! Τα Ξωτικά δεν γερνάνε και δεν πεθαίνουν φυσικά. Μπορούν όμως να σκοτωθούν σε μάχη ή από θλίψη.', hint2:'Ο Έλροντ ζει χιλιάδες χρόνια.'},
+  {type:'tf', question:'Ο Γκάνταλφ πεθαίνει και επιστρέφει πιο δυνατός.', answer:'Αλήθεια', decoys:['Ψέμα'], explanation:'Ο Γκάνταλφ πολέμησε τον Μπάλρογκ στη Μόρια, πέθανε, και επέστρεψε ως Γκάνταλφ ο Λευκός — πιο δυνατός από πριν!', hint2:'Μετά τη μάχη στη Γέφυρα.'},
+  {type:'tf', question:'Η Μόρντορ βρίσκεται στα δυτικά της Μέσης Γης.', answer:'Ψέμα', decoys:['Αλήθεια'], explanation:'Η Μόρντορ (Mordor) βρίσκεται στα ανατολικά! Το Σάιρ είναι στα δυτικά, και ο Φρόντο ταξίδεψε ανατολικά για να φτάσει εκεί.', hint2:'Ο Φρόντο ταξιδεύει από τα δυτικά προς εκεί.'}
+];
+
+// ====== GAME STATE ======
+let currentPlayer = '';
+let score = 0;
+let currentQ = 0;
+let streak = 0;
+let correctCount = 0;
+let gameQuestions = [];
+let mistakes = [];
+let timerInterval = null;
+let timerMs = 20000;
+let hintUsed = false;
+let answered = false;
+const TOTAL_QUESTIONS = 15;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function selectPlayer(name) {
+  currentPlayer = name;
+  document.querySelectorAll('.player-btn').forEach(b => b.classList.remove('selected'));
+  event.target.classList.add('selected');
+  playClick();
+  const key = 'lord-of-the-rings-highscore-' + name;
+  const hs = localStorage.getItem(key);
+  document.getElementById('startHighscore').textContent = hs ? `Ρεκόρ ${name}: ${hs} πόντοι` : '';
+  document.getElementById('playBtn').style.display = 'inline-block';
+}
+
+function startGame() {
+  if (!currentPlayer) return;
+  playGameStart();
+  score = 0; currentQ = 0; streak = 0; correctCount = 0; mistakes = []; hintUsed = false; answered = false;
+  const chars = shuffle(CHAR_QUESTIONS).slice(0, 5);
+  const quotes = shuffle(QUOTE_QUESTIONS).slice(0, 3);
+  const plots = shuffle(PLOT_QUESTIONS).slice(0, 4);
+  const tfs = shuffle(TF_QUESTIONS).slice(0, 3);
+  gameQuestions = shuffle([...chars, ...quotes, ...plots, ...tfs]);
+  document.getElementById('startScreen').style.display = 'none';
+  document.getElementById('gameScreen').style.display = 'flex';
+  showRound();
+}
+
+function restartGame() {
+  document.getElementById('resultOverlay').classList.remove('active');
+  document.getElementById('gameScreen').style.display = 'none';
+  document.getElementById('startScreen').style.display = 'block';
+  document.getElementById('playBtn').style.display = 'inline-block';
+  const key = 'lord-of-the-rings-highscore-' + currentPlayer;
+  const hs = localStorage.getItem(key);
+  document.getElementById('startHighscore').textContent = hs ? `Ρεκόρ ${currentPlayer}: ${hs} πόντοι` : '';
+}
+
+// ====== TIMER ======
+function startTimer() {
+  timerMs = 20000;
+  const bar = document.getElementById('timerBar');
+  bar.style.width = '100%';
+  bar.style.background = '#4caf50';
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timerMs -= 100;
+    const pct = (timerMs / 20000) * 100;
+    bar.style.width = pct + '%';
+    if (pct > 50) bar.style.background = '#4caf50';
+    else if (pct > 25) bar.style.background = '#ffc107';
+    else bar.style.background = '#f44336';
+    if (timerMs <= 0) {
+      clearInterval(timerInterval);
+      handleTimeout();
+    }
+  }, 100);
+}
+
+function handleTimeout() {
+  if (answered) return;
+  answered = true;
+  playTimeout();
+  const q = gameQuestions[currentQ];
+  streak = 0;
+  document.getElementById('streakIndicator').style.display = 'none';
+  mistakes.push({ question: q.question, given: 'Τέλος χρόνου ⏰', correct: q.answer, explanation: q.explanation });
+  screenFlash('wrong');
+  showExplanation(q, false);
+  document.querySelectorAll('.answer-btn').forEach(b => {
+    b.disabled = true;
+    if (b.textContent === q.answer) b.classList.add('correct');
+  });
+  document.getElementById('hintBtn').style.display = 'none';
+  setTimeout(() => { currentQ++; if (currentQ < TOTAL_QUESTIONS) showRound(); else showResults(); }, 2800);
+}
+
+// ====== VISUAL EFFECTS ======
+function screenFlash(type) {
+  const el = document.getElementById('screenFlash');
+  el.className = 'screen-flash ' + type;
+  setTimeout(() => el.className = 'screen-flash', 400);
+}
+
+function spawnSparkles(x, y) {
+  const emojis = ['✨', '⭐', '🌟', '💫', '🔮'];
+  for (let i = 0; i < 8; i++) {
+    const s = document.createElement('div');
+    s.className = 'sparkle';
+    s.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    s.style.left = (x + (Math.random() - 0.5) * 120) + 'px';
+    s.style.top = (y + (Math.random() - 0.5) * 120) + 'px';
+    s.style.animationDelay = (Math.random() * 0.3) + 's';
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 1000);
+  }
+}
+
+function spawnFlip() {
+  const el = document.getElementById('flipContainer');
+  el.className = 'flip-container active';
+  setTimeout(() => el.className = 'flip-container', 800);
+}
+
+function showFloatPoints(pts, x, y) {
+  const el = document.createElement('div');
+  el.className = 'float-points';
+  el.textContent = '+' + pts;
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1100);
+}
+
+function showExplanation(q, isCorrect) {
+  const box = document.getElementById('explanationBox');
+  box.style.display = 'block';
+  box.className = isCorrect ? 'explanation-box' : 'explanation-box wrong-box';
+  document.getElementById('expLabel').textContent = isCorrect ? '💡 Το ήξερες;' : '💡 Σωστή απάντηση:';
+  document.getElementById('expCorrect').textContent = isCorrect ? '' : q.answer;
+  document.getElementById('expText').textContent = q.explanation;
+}
+
+// ====== GAME FLOW ======
+function showRound() {
+  answered = false;
+  hintUsed = false;
+  playNewRound();
+  const q = gameQuestions[currentQ];
+  document.getElementById('questionNum').textContent = (currentQ + 1) + ' / ' + TOTAL_QUESTIONS;
+  document.getElementById('scoreDisplay').textContent = 'Πόντοι: ' + score;
+  document.getElementById('progressFill').style.width = ((currentQ + 1) / TOTAL_QUESTIONS * 100) + '%';
+  document.getElementById('explanationBox').style.display = 'none';
+  document.getElementById('hintBtn').style.display = 'inline-block';
+
+  // Stars
+  const starArea = document.getElementById('starsArea');
+  if (correctCount >= 9) starArea.textContent = '⭐⭐⭐';
+  else if (correctCount >= 7) starArea.textContent = '⭐⭐';
+  else if (correctCount >= 4) starArea.textContent = '⭐';
+  else starArea.textContent = '';
+
+  // Badge
+  const badge = document.getElementById('typeBadge');
+  if (q.type === 'char') { badge.textContent = 'ΧΑΡΑΚΤΗΡΑΣ'; badge.className = 'q-type-badge badge-character'; }
+  else if (q.type === 'quote') { badge.textContent = 'ΑΤΑΚΑ'; badge.className = 'q-type-badge badge-quote'; }
+  else if (q.type === 'plot') { badge.textContent = 'ΙΣΤΟΡΙΑ'; badge.className = 'q-type-badge badge-plot'; }
+  else { badge.textContent = 'ΑΛΗΘΕΙΑ / ΨΕΜΑ'; badge.className = 'q-type-badge badge-truefalse'; }
+
+  // Character display
+  const charDisp = document.getElementById('charDisplay');
+  const quoteDisp = document.getElementById('quoteDisplay');
+  if (q.type === 'char') {
+    charDisp.style.display = 'flex';
+    quoteDisp.style.display = 'none';
+    document.getElementById('charEmoji').textContent = q.emoji;
+    document.getElementById('charInner').style.background = q.bg;
+    document.getElementById('charDetail').textContent = q.detail;
+  } else if (q.type === 'quote') {
+    charDisp.style.display = 'none';
+    quoteDisp.style.display = 'block';
+    quoteDisp.textContent = q.quote;
+  } else {
+    charDisp.style.display = 'none';
+    quoteDisp.style.display = 'none';
+  }
+
+  // Question & hint
+  document.getElementById('questionText').textContent = q.question;
+  document.getElementById('hintText').textContent = q.hint || '';
+
+  // Answers
+  const answersDiv = document.getElementById('answers');
+  answersDiv.innerHTML = '';
+  const options = shuffle([q.answer, ...q.decoys]);
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.textContent = opt;
+    btn.onclick = (e) => handleAnswer(opt, e);
+    answersDiv.appendChild(btn);
+  });
+
+  // Re-animate card
+  const card = document.getElementById('questionCard');
+  card.style.animation = 'none';
+  card.offsetHeight;
+  card.style.animation = 'cardEnter 0.4s ease-out';
+
+  startTimer();
+}
+
+function useHint() {
+  if (hintUsed || answered) return;
+  hintUsed = true;
+  playClick();
+  const q = gameQuestions[currentQ];
+  document.getElementById('hintText').textContent = q.hint2 || q.hint || '';
+  document.getElementById('hintBtn').style.display = 'none';
+}
+
+function handleAnswer(chosen, e) {
+  if (answered) return;
+  answered = true;
+  clearInterval(timerInterval);
+  playClick();
+  const q = gameQuestions[currentQ];
+  const isCorrect = (chosen === q.answer);
+  const rect = e.target.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+
+  document.querySelectorAll('.answer-btn').forEach(b => {
+    b.disabled = true;
+    if (b.textContent === q.answer) b.classList.add('correct');
+    if (b.textContent === chosen && !isCorrect) b.classList.add('wrong');
+  });
+  document.getElementById('hintBtn').style.display = 'none';
+
+  if (isCorrect) {
+    streak++;
+    correctCount++;
+    let pts = (streak >= 3) ? 20 : 10;
+    if (hintUsed) pts = Math.floor(pts / 2);
+    score += pts;
+    if (streak >= 3) {
+      playStreak();
+      screenFlash('streak');
+      document.getElementById('streakIndicator').style.display = 'block';
+      document.getElementById('streakCount').textContent = streak;
+    } else {
+      playCorrect();
+      screenFlash('correct');
+    }
+    spawnSparkles(cx, cy);
+    spawnFlip();
+    showFloatPoints(pts, cx, cy - 30);
+    showExplanation(q, true);
+  } else {
+    streak = 0;
+    document.getElementById('streakIndicator').style.display = 'none';
+    playWrong();
+    screenFlash('wrong');
+    mistakes.push({ question: q.question, given: chosen, correct: q.answer, explanation: q.explanation });
+    showExplanation(q, false);
+  }
+
+  document.getElementById('scoreDisplay').textContent = 'Πόντοι: ' + score;
+  const starArea = document.getElementById('starsArea');
+  if (correctCount >= 9) starArea.textContent = '⭐⭐⭐';
+  else if (correctCount >= 7) starArea.textContent = '⭐⭐';
+  else if (correctCount >= 4) starArea.textContent = '⭐';
+
+  setTimeout(() => { currentQ++; if (currentQ < TOTAL_QUESTIONS) showRound(); else showResults(); }, 2200);
+}
+
+function showResults() {
+  document.getElementById('gameScreen').style.display = 'none';
+  document.getElementById('streakIndicator').style.display = 'none';
+  const overlay = document.getElementById('resultOverlay');
+  overlay.classList.add('active');
+
+  document.getElementById('resultScore').textContent = correctCount + ' / ' + TOTAL_QUESTIONS;
+
+  let stars = '';
+  let emoji = '🧙';
+  let title = 'Τέλος του Ταξιδιού!';
+  let msg = '';
+  if (correctCount >= 13) { stars = '⭐⭐⭐'; emoji = '👑'; title = 'Βασιλιάς της Μέσης Γης!'; msg = 'Εκπληκτικό ' + currentPlayer + '! Γνωρίζεις τη Μέση Γη σαν τον Γκάνταλφ!'; }
+  else if (correctCount >= 9) { stars = '⭐⭐⭐'; emoji = '⚔️'; title = 'Ήρωας της Συντροφιάς!'; msg = 'Μπράβο ' + currentPlayer + '! Θα μπορούσες να είσαι μέλος της Συντροφιάς!'; }
+  else if (correctCount >= 7) { stars = '⭐⭐'; emoji = '🗡️'; title = 'Γενναίος Πολεμιστής!'; msg = 'Καλή δουλειά ' + currentPlayer + '! Είσαι στο σωστό δρόμο!'; }
+  else if (correctCount >= 4) { stars = '⭐'; emoji = '🧝'; title = 'Νεαρός Περιπετειώδης!'; msg = 'Ωραία προσπάθεια ' + currentPlayer + '! Ξαναδοκίμασε!'; }
+  else { stars = ''; emoji = '🧒'; title = 'Μαθητευόμενος Χόμπιτ'; msg = currentPlayer + ', το ταξίδι μόλις ξεκίνησε! Ξαναπαίξε!'; }
+
+  document.getElementById('resultEmoji').textContent = emoji;
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultStars').textContent = stars;
+  document.getElementById('resultMessage').textContent = msg;
+
+  // Highscore
+  const key = 'lord-of-the-rings-highscore-' + currentPlayer;
+  const prev = parseInt(localStorage.getItem(key)) || 0;
+  if (score > prev) {
+    localStorage.setItem(key, score);
+    document.getElementById('newRecord').style.display = 'block';
+    document.getElementById('resultHighscore').textContent = 'Προηγούμενο ρεκόρ: ' + prev + ' πόντοι';
+  } else {
+    document.getElementById('newRecord').style.display = 'none';
+    document.getElementById('resultHighscore').textContent = 'Ρεκόρ: ' + prev + ' πόντοι';
+  }
+
+  // Review
+  const reviewList = document.getElementById('reviewList');
+  reviewList.innerHTML = '';
+  reviewList.style.display = 'none';
+  if (mistakes.length === 0) {
+    document.getElementById('reviewBtn').style.display = 'none';
+  } else {
+    document.getElementById('reviewBtn').style.display = 'inline-block';
+    mistakes.forEach(m => {
+      const item = document.createElement('div');
+      item.className = 'review-item';
+      item.innerHTML = `<div class="ri-q">${m.question}</div><div class="ri-wrong">Η απάντησή σου: ${m.given}</div><div class="ri-correct">Σωστό: ${m.correct}</div><div class="ri-exp">${m.explanation}</div>`;
+      reviewList.appendChild(item);
+    });
+  }
+
+  // Confetti
+  if (correctCount >= 12) launchConfetti();
+  playVictory();
+}
+
+function toggleReview() {
+  const rl = document.getElementById('reviewList');
+  rl.style.display = rl.style.display === 'none' ? 'block' : 'none';
+}
+
+function launchConfetti() {
+  const emojis = ['🐉', '⚔️', '🌟', '🏰', '🔮', '✨'];
+  for (let i = 0; i < 40; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti-piece';
+    c.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    c.style.left = Math.random() * 100 + 'vw';
+    c.style.animationDuration = (2 + Math.random() * 3) + 's';
+    c.style.animationDelay = (Math.random() * 2) + 's';
+    c.style.fontSize = (16 + Math.random() * 16) + 'px';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 6000);
+  }
+}
+</script>
+</body>
+</html>

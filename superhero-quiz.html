@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Superhero Quiz!</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+
+body {
+  font-family: 'Nunito', sans-serif;
+  min-height: 100vh; min-height: 100dvh;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── animated bg ── */
+.bg-stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+.bg-stars span {
+  position: absolute; border-radius: 50%; background: white;
+  animation: twinkle var(--dur) ease-in-out infinite alternate;
+}
+@keyframes twinkle { 0% { opacity: 0.2; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1.2); } }
+
+/* ── screens ── */
+.screen { display: none; flex-direction: column; align-items: center; justify-content: center;
+  width: 100vw; height: 100vh; height: 100dvh; position: relative; z-index: 1; padding: 20px; }
+.screen.active { display: flex; }
+
+/* ── start screen ── */
+#startScreen .hero-parade {
+  display: flex; gap: 18px; margin: 30px 0; flex-wrap: wrap; justify-content: center;
+}
+.parade-hero {
+  width: 100px; height: 100px; border-radius: 24px; display: flex; align-items: center; justify-content: center;
+  font-size: 56px; animation: heroFloat 2s ease-in-out infinite;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+}
+.parade-hero:nth-child(2) { animation-delay: 0.3s; }
+.parade-hero:nth-child(3) { animation-delay: 0.6s; }
+.parade-hero:nth-child(4) { animation-delay: 0.9s; }
+@keyframes heroFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+.title {
+  font-family: 'Fredoka One', cursive; font-size: clamp(2rem, 7vw, 3.5rem);
+  color: #fff; text-shadow: 0 4px 20px rgba(255,200,0,0.5);
+  text-align: center; line-height: 1.2;
+}
+.subtitle { color: rgba(255,255,255,0.7); font-size: clamp(1rem, 3vw, 1.4rem); margin-top: 8px; }
+
+.start-btn {
+  margin-top: 36px; padding: 20px 60px; border: none; border-radius: 60px;
+  background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a2e;
+  font-family: 'Fredoka One', cursive; font-size: clamp(1.5rem, 5vw, 2rem);
+  cursor: pointer; box-shadow: 0 8px 30px rgba(255,215,0,0.4);
+  animation: pulse 1.5s ease-in-out infinite;
+  transition: transform 0.2s;
+}
+.start-btn:active { transform: scale(0.95); animation: none; }
+@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+/* ── game screen ── */
+.prompt-area {
+  text-align: center; margin-bottom: 24px;
+}
+.prompt-text {
+  font-family: 'Fredoka One', cursive; font-size: clamp(1.6rem, 5vw, 2.4rem);
+  color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+.prompt-hero-preview {
+  font-size: clamp(4rem, 12vw, 6rem); margin-top: 8px;
+  animation: bounce 0.8s ease-in-out infinite;
+}
+@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+.speaker-btn {
+  background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%; width: 52px; height: 52px; font-size: 28px;
+  cursor: pointer; margin-top: 10px; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.speaker-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.3); }
+
+.hero-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+  width: 100%; max-width: 420px;
+}
+.hero-card {
+  aspect-ratio: 1; border-radius: 28px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; cursor: pointer;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3); transition: transform 0.15s;
+  position: relative; overflow: hidden;
+  border: 4px solid rgba(255,255,255,0.2);
+}
+.hero-card:active { transform: scale(0.93); }
+.hero-card .hero-emoji { font-size: clamp(3.5rem, 10vw, 5rem); position: relative; z-index: 1; }
+.hero-card .hero-name {
+  font-family: 'Fredoka One', cursive; font-size: clamp(0.9rem, 2.5vw, 1.2rem);
+  color: rgba(255,255,255,0.95); margin-top: 4px; position: relative; z-index: 1;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+.hero-card::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15), transparent 60%);
+}
+.hero-card.disabled { pointer-events: none; }
+
+/* hero colors */
+.hero-superman { background: linear-gradient(135deg, #1565c0, #d32f2f); }
+.hero-spiderman { background: linear-gradient(135deg, #c62828, #1565c0); }
+.hero-batman { background: linear-gradient(135deg, #263238, #37474f); }
+.hero-hulk { background: linear-gradient(135deg, #2e7d32, #4caf50); }
+
+/* feedback overlay */
+.feedback-overlay {
+  position: fixed; inset: 0; z-index: 100; display: none;
+  align-items: center; justify-content: center; flex-direction: column;
+}
+.feedback-overlay.active { display: flex; }
+.feedback-overlay.correct { background: rgba(46, 125, 50, 0.85); }
+.feedback-overlay.wrong { background: rgba(198, 40, 40, 0.7); }
+.feedback-emoji {
+  font-size: clamp(5rem, 20vw, 10rem);
+  animation: feedbackPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.feedback-text {
+  font-family: 'Fredoka One', cursive; font-size: clamp(1.8rem, 6vw, 3rem);
+  color: white; margin-top: 10px; text-align: center;
+}
+@keyframes feedbackPop {
+  0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+/* progress dots */
+.progress-dots {
+  display: flex; gap: 10px; margin-bottom: 20px;
+}
+.dot {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: rgba(255,255,255,0.2); transition: all 0.3s;
+}
+.dot.correct { background: #4caf50; box-shadow: 0 0 10px #4caf50; }
+.dot.wrong { background: #f44336; box-shadow: 0 0 10px #f44336; }
+.dot.current { background: #ffd700; box-shadow: 0 0 12px #ffd700; transform: scale(1.3); }
+
+/* round counter */
+.round-counter {
+  font-family: 'Fredoka One', cursive; font-size: 1.1rem;
+  color: rgba(255,255,255,0.6); margin-bottom: 6px;
+}
+
+/* ── end screen ── */
+.end-emoji { font-size: clamp(5rem, 18vw, 8rem); animation: heroFloat 2s ease-in-out infinite; }
+.end-score {
+  font-family: 'Fredoka One', cursive; font-size: clamp(1.5rem, 5vw, 2.2rem);
+  color: #ffd700; margin: 16px 0 6px;
+}
+.end-stars { font-size: clamp(2rem, 7vw, 3.5rem); margin: 10px 0 20px; }
+.end-msg {
+  font-family: 'Fredoka One', cursive; font-size: clamp(1.2rem, 4vw, 1.6rem);
+  color: rgba(255,255,255,0.85); text-align: center; max-width: 360px; line-height: 1.4;
+}
+.play-again-btn {
+  margin-top: 30px; padding: 18px 50px; border: none; border-radius: 60px;
+  background: linear-gradient(135deg, #4caf50, #2e7d32); color: white;
+  font-family: 'Fredoka One', cursive; font-size: clamp(1.3rem, 4vw, 1.6rem);
+  cursor: pointer; box-shadow: 0 8px 24px rgba(76,175,80,0.4);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+.play-again-btn:active { transform: scale(0.95); animation: none; }
+
+/* ── sparkles ── */
+.sparkle {
+  position: fixed; pointer-events: none; z-index: 200;
+  font-size: 24px; animation: sparkleFloat 1s ease-out forwards;
+}
+@keyframes sparkleFloat {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-80px) scale(0); opacity: 0; }
+}
+
+/* ── confetti ── */
+.confetti-piece {
+  position: fixed; top: -10px; z-index: 300; pointer-events: none;
+  width: 10px; height: 10px; border-radius: 2px;
+  animation: confettiFall var(--fall-dur) linear forwards;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+/* correct card glow */
+.hero-card.glow {
+  animation: cardGlow 0.6s ease-in-out;
+  border-color: #ffd700;
+}
+@keyframes cardGlow {
+  0%, 100% { box-shadow: 0 0 10px rgba(255,215,0,0.3); }
+  50% { box-shadow: 0 0 40px rgba(255,215,0,0.8), 0 0 80px rgba(255,215,0,0.4); }
+}
+
+/* wrong card shake */
+.hero-card.shake {
+  animation: shake 0.4s ease-in-out;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+</style>
+</head>
+<body>
+
+<!-- stars bg -->
+<div class="bg-stars" id="bgStars"></div>
+
+<!-- FEEDBACK OVERLAY -->
+<div class="feedback-overlay" id="feedbackOverlay">
+  <div class="feedback-emoji" id="feedbackEmoji"></div>
+  <div class="feedback-text" id="feedbackText"></div>
+</div>
+
+<!-- START SCREEN -->
+<div class="screen active" id="startScreen">
+  <div class="title">Ποιος Ήρωας Είναι;</div>
+  <div class="subtitle">Βρες τον σωστό ήρωα!</div>
+  <div class="hero-parade">
+    <div class="parade-hero hero-superman">🦸</div>
+    <div class="parade-hero hero-spiderman">🕷️</div>
+    <div class="parade-hero hero-batman">🦇</div>
+    <div class="parade-hero hero-hulk">💪</div>
+  </div>
+  <button class="start-btn" id="startBtn">ΠΑΙΞΕ! 🎮</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div class="screen" id="gameScreen">
+  <div class="round-counter" id="roundCounter"></div>
+  <div class="progress-dots" id="progressDots"></div>
+  <div class="prompt-area">
+    <div class="prompt-text" id="promptText"></div>
+    <div class="prompt-hero-preview" id="promptPreview"></div>
+    <button class="speaker-btn" id="speakerBtn">🔊</button>
+  </div>
+  <div class="hero-grid" id="heroGrid"></div>
+</div>
+
+<!-- END SCREEN -->
+<div class="screen" id="endScreen">
+  <div class="end-emoji" id="endEmoji"></div>
+  <div class="end-score" id="endScore"></div>
+  <div class="end-stars" id="endStars"></div>
+  <div class="end-msg" id="endMsg"></div>
+  <button class="play-again-btn" id="playAgainBtn">Ξανά! 🔄</button>
+</div>
+
+<script>
+// ── HEROES DATA ──
+const HEROES = [
+  { id: 'superman',   name: 'Superman',   emoji: '🦸',  cls: 'hero-superman',  greekPrompt: 'Βρες τον Superman!',  greekName: 'Σούπερμαν' },
+  { id: 'spiderman',  name: 'Spiderman',  emoji: '🕷️', cls: 'hero-spiderman', greekPrompt: 'Βρες τον Spiderman!', greekName: 'Σπάιντερμαν' },
+  { id: 'batman',     name: 'Batman',     emoji: '🦇',  cls: 'hero-batman',    greekPrompt: 'Βρες τον Batman!',    greekName: 'Μπάτμαν' },
+  { id: 'hulk',       name: 'Hulk',       emoji: '💪',  cls: 'hero-hulk',      greekPrompt: 'Βρες τον Hulk!',      greekName: 'Χαλκ' },
+];
+
+const CORRECT_MESSAGES = ['Μπράβο!', 'Τέλεια!', 'Σωστά!', 'Σούπερ!', 'Φοβερός!', 'Ωραίος!'];
+const WRONG_MESSAGES   = ['Όχι αυτός!', 'Ξαναδοκίμασε!', 'Σχεδόν!'];
+const CORRECT_EMOJIS   = ['🌟', '⭐', '🎉', '🏆', '💫', '🥇'];
+const WRONG_EMOJIS     = ['😅', '🤔', '💪'];
+
+// ── AUDIO (Web Audio API) ──
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+function ensureAudio() { if (!audioCtx) audioCtx = new AudioCtx(); }
+
+function playNote(freq, start, dur, type = 'triangle', gain = 0.12) {
+  ensureAudio();
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  g.gain.setValueAtTime(gain, audioCtx.currentTime + start);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + start + dur);
+  osc.connect(g).connect(audioCtx.destination);
+  osc.start(audioCtx.currentTime + start);
+  osc.stop(audioCtx.currentTime + start + dur);
+}
+
+function soundCorrect() {
+  [523, 659, 784, 1047].forEach((f, i) => playNote(f, i * 0.08, 0.25, 'triangle', 0.15));
+}
+function soundWrong() {
+  playNote(300, 0, 0.2, 'sawtooth', 0.08);
+  playNote(250, 0.15, 0.3, 'sawtooth', 0.06);
+}
+function soundClick() {
+  playNote(800, 0, 0.08, 'sine', 0.1);
+}
+function soundVictory() {
+  [523, 587, 659, 784, 880, 1047, 1175, 1319, 1568].forEach((f, i) =>
+    playNote(f, i * 0.1, 0.35, 'triangle', 0.12)
+  );
+}
+function soundStart() {
+  [440, 554, 659].forEach((f, i) => playNote(f, i * 0.12, 0.3, 'triangle', 0.1));
+}
+
+// ── SPEECH ──
+function speak(text) {
+  if (!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'el-GR';
+  u.rate = 0.85;
+  u.pitch = 1.1;
+  // try to find a Greek voice
+  const voices = speechSynthesis.getVoices();
+  const gr = voices.find(v => v.lang.startsWith('el'));
+  if (gr) u.voice = gr;
+  speechSynthesis.speak(u);
+}
+// preload voices
+if ('speechSynthesis' in window) {
+  speechSynthesis.getVoices();
+  speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+}
+
+// ── SPARKLES ──
+function spawnSparkles(x, y, count = 12) {
+  const emojis = ['⭐', '✨', '🌟', '💛', '💫'];
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'sparkle';
+    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    el.style.left = (x + (Math.random() - 0.5) * 120) + 'px';
+    el.style.top = (y + (Math.random() - 0.5) * 80) + 'px';
+    el.style.animationDelay = (Math.random() * 0.3) + 's';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1200);
+  }
+}
+
+// ── CONFETTI ──
+function spawnConfetti(count = 60) {
+  const colors = ['#ffd700', '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#ff9ff3', '#54a0ff', '#5f27cd'];
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.left = Math.random() * 100 + 'vw';
+    el.style.background = colors[Math.floor(Math.random() * colors.length)];
+    el.style.setProperty('--fall-dur', (2 + Math.random() * 2) + 's');
+    el.style.animationDelay = Math.random() * 1.5 + 's';
+    el.style.width = (6 + Math.random() * 8) + 'px';
+    el.style.height = (6 + Math.random() * 8) + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 5000);
+  }
+}
+
+// ── BG STARS ──
+function initStars() {
+  const cont = document.getElementById('bgStars');
+  for (let i = 0; i < 50; i++) {
+    const s = document.createElement('span');
+    const size = 1 + Math.random() * 3;
+    s.style.width = size + 'px';
+    s.style.height = size + 'px';
+    s.style.left = Math.random() * 100 + '%';
+    s.style.top = Math.random() * 100 + '%';
+    s.style.setProperty('--dur', (1 + Math.random() * 3) + 's');
+    s.style.animationDelay = Math.random() * 3 + 's';
+    cont.appendChild(s);
+  }
+}
+
+// ── GAME STATE ──
+const TOTAL_ROUNDS = 8;
+let currentRound = 0;
+let score = 0;
+let targetHero = null;
+let results = []; // true/false per round
+let waiting = false;
+
+// ── SCREENS ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── BUILD ROUND QUESTIONS ──
+// Each round: pick a random target, show all 4 heroes shuffled
+function buildRounds() {
+  const rounds = [];
+  // ensure each hero appears at least once as target, then fill randomly
+  const must = [...HEROES].sort(() => Math.random() - 0.5);
+  must.forEach(h => rounds.push(h));
+  while (rounds.length < TOTAL_ROUNDS) {
+    rounds.push(HEROES[Math.floor(Math.random() * HEROES.length)]);
+  }
+  // shuffle all
+  for (let i = rounds.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [rounds[i], rounds[j]] = [rounds[j], rounds[i]];
+  }
+  return rounds;
+}
+
+let roundTargets = [];
+
+// ── RENDER ROUND ──
+function renderRound() {
+  if (currentRound >= TOTAL_ROUNDS) {
+    endGame();
+    return;
+  }
+
+  targetHero = roundTargets[currentRound];
+  waiting = false;
+
+  // round counter
+  document.getElementById('roundCounter').textContent = `${currentRound + 1} / ${TOTAL_ROUNDS}`;
+
+  // progress dots
+  const dotsEl = document.getElementById('progressDots');
+  dotsEl.innerHTML = '';
+  for (let i = 0; i < TOTAL_ROUNDS; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    if (i < currentRound) d.classList.add(results[i] ? 'correct' : 'wrong');
+    if (i === currentRound) d.classList.add('current');
+    dotsEl.appendChild(d);
+  }
+
+  // prompt
+  document.getElementById('promptText').textContent = targetHero.greekPrompt;
+  document.getElementById('promptPreview').textContent = targetHero.emoji;
+
+  // speak
+  setTimeout(() => speak(targetHero.greekPrompt), 300);
+
+  // hero grid - shuffle order
+  const shuffled = [...HEROES].sort(() => Math.random() - 0.5);
+  const grid = document.getElementById('heroGrid');
+  grid.innerHTML = '';
+  shuffled.forEach(hero => {
+    const card = document.createElement('div');
+    card.className = `hero-card ${hero.cls}`;
+    card.dataset.heroId = hero.id;
+    card.innerHTML = `
+      <div class="hero-emoji">${hero.emoji}</div>
+      <div class="hero-name">${hero.name}</div>
+    `;
+    card.addEventListener('click', () => onCardClick(card, hero));
+    card.addEventListener('touchend', (e) => { e.preventDefault(); onCardClick(card, hero); });
+    grid.appendChild(card);
+  });
+}
+
+// ── CARD CLICK ──
+function onCardClick(card, hero) {
+  if (waiting) return;
+  waiting = true;
+  ensureAudio();
+
+  const overlay = document.getElementById('feedbackOverlay');
+  const emojiEl = document.getElementById('feedbackEmoji');
+  const textEl = document.getElementById('feedbackText');
+
+  // disable all cards
+  document.querySelectorAll('.hero-card').forEach(c => c.classList.add('disabled'));
+
+  if (hero.id === targetHero.id) {
+    // CORRECT
+    results.push(true);
+    score++;
+    soundCorrect();
+    card.classList.add('glow');
+    const rect = card.getBoundingClientRect();
+    spawnSparkles(rect.left + rect.width/2, rect.top + rect.height/2, 15);
+
+    overlay.className = 'feedback-overlay correct active';
+    emojiEl.textContent = CORRECT_EMOJIS[Math.floor(Math.random() * CORRECT_EMOJIS.length)];
+    textEl.textContent = CORRECT_MESSAGES[Math.floor(Math.random() * CORRECT_MESSAGES.length)];
+
+    setTimeout(() => speak(CORRECT_MESSAGES[Math.floor(Math.random() * CORRECT_MESSAGES.length)]), 200);
+
+    setTimeout(() => {
+      overlay.classList.remove('active');
+      currentRound++;
+      renderRound();
+    }, 1800);
+
+  } else {
+    // WRONG - gentle, let them try again
+    results.push(false);
+    soundWrong();
+    card.classList.add('shake');
+
+    overlay.className = 'feedback-overlay wrong active';
+    emojiEl.textContent = WRONG_EMOJIS[Math.floor(Math.random() * WRONG_EMOJIS.length)];
+    textEl.textContent = WRONG_MESSAGES[Math.floor(Math.random() * WRONG_MESSAGES.length)];
+
+    setTimeout(() => {
+      overlay.classList.remove('active');
+      card.style.opacity = '0.3';
+      card.classList.add('disabled');
+      // re-enable remaining cards so they can try again...
+      // actually move to next round to keep it simple for 4yo
+      currentRound++;
+      renderRound();
+    }, 1500);
+  }
+}
+
+// ── END GAME ──
+function endGame() {
+  showScreen('endScreen');
+  soundVictory();
+  spawnConfetti(80);
+
+  const pct = score / TOTAL_ROUNDS;
+  let stars, emoji, msg;
+
+  if (pct >= 0.875) {      // 7-8 correct
+    stars = '⭐⭐⭐';
+    emoji = '🏆';
+    msg = 'Είσαι σούπερ ήρωας! Τα πήγες φανταστικά!';
+  } else if (pct >= 0.625) { // 5-6 correct
+    stars = '⭐⭐';
+    emoji = '🦸';
+    msg = 'Πολύ καλά! Είσαι σχεδόν σούπερ ήρωας!';
+  } else if (pct >= 0.375) { // 3-4 correct
+    stars = '⭐';
+    emoji = '💪';
+    msg = 'Καλή προσπάθεια! Δοκίμασε ξανά!';
+  } else {
+    stars = '⭐';
+    emoji = '🤗';
+    msg = 'Μην ανησυχείς! Παίξε ξανά!';
+  }
+
+  document.getElementById('endEmoji').textContent = emoji;
+  document.getElementById('endScore').textContent = `${score} / ${TOTAL_ROUNDS} σωστά!`;
+  document.getElementById('endStars').textContent = stars;
+  document.getElementById('endMsg').textContent = msg;
+
+  setTimeout(() => speak(msg), 500);
+  setTimeout(() => spawnConfetti(40), 1500);
+}
+
+// ── START / RESTART ──
+function startGame() {
+  ensureAudio();
+  soundStart();
+  currentRound = 0;
+  score = 0;
+  results = [];
+  roundTargets = buildRounds();
+  showScreen('gameScreen');
+  renderRound();
+}
+
+// ── INIT ──
+initStars();
+
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('playAgainBtn').addEventListener('click', startGame);
+document.getElementById('speakerBtn').addEventListener('click', () => {
+  ensureAudio();
+  soundClick();
+  if (targetHero) speak(targetHero.greekPrompt);
+});
+</script>
+</body>
+</html>

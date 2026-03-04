@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KPop Demon Hunters - Quiz!</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --sky-top:#1a0a2e;--sky-mid:#2d1b69;--sky-bot:#0a0a1a;
+  --accent:#ff64b4;--accent2:#b464ff;
+  --card-bg:rgba(30,15,60,0.75);--card-border:rgba(255,100,180,0.12);
+  --btn-bg:#1a0a30;--btn-hover:#2d1b50;
+  --text-primary:#f0e0ff;--text-secondary:#a088c0;
+  --correct:#4caf50;--wrong:#f44336;--streak-color:#ff6b35;
+}
+html,body{height:100%;overflow-x:hidden}
+body{font-family:'Nunito',sans-serif;color:var(--text-primary);background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-mid) 40%,#1a0a3e 70%,var(--sky-bot) 100%);background-attachment:fixed;min-height:100vh}
+#bg-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+#screen-flash{position:fixed;top:0;left:0;width:100%;height:100%;z-index:50;pointer-events:none;opacity:0;transition:opacity .15s}
+#screen-flash.flash-green{background:rgba(76,175,80,.25);opacity:1}
+#screen-flash.flash-red{background:rgba(244,67,54,.25);opacity:1}
+#screen-flash.flash-gold{background:rgba(255,100,180,.3);opacity:1}
+#app{position:relative;z-index:1;max-width:640px;margin:0 auto;padding:16px;min-height:100vh}
+.screen{display:none;flex-direction:column;align-items:center;animation:fadeUp .5s ease-out}
+.screen.active{display:flex}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.glass{background:var(--card-bg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--card-border);border-radius:20px;padding:28px;width:100%}
+.logo-emoji{font-size:80px;display:block;text-align:center;animation:float 3s ease-in-out infinite;margin-bottom:8px}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.title{font-family:'Fredoka One',cursive;font-size:clamp(1.8rem,5vw,2.6rem);text-align:center;background:linear-gradient(135deg,var(--accent),var(--accent2),#64b4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 200%;animation:gradShift 3s ease-in-out infinite;line-height:1.2}
+@keyframes gradShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.subtitle{text-align:center;font-size:1.1rem;color:var(--text-secondary);margin:6px 0 24px}
+.divider{text-align:center;font-size:1.5rem;letter-spacing:12px;margin:8px 0 16px;opacity:.6}
+.player-label{font-family:'Fredoka One',cursive;font-size:1rem;color:var(--accent);text-align:center;margin-bottom:10px}
+.player-row{display:flex;gap:14px;justify-content:center;margin-bottom:20px}
+.player-btn{flex:1;max-width:180px;padding:16px;border-radius:16px;border:2px solid var(--card-border);background:var(--btn-bg);color:var(--text-primary);font-family:'Fredoka One',cursive;font-size:1.2rem;cursor:pointer;transition:all .25s;text-align:center}
+.player-btn:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 6px 20px rgba(255,100,180,.15)}
+.player-btn.selected{border-color:var(--accent);background:rgba(255,100,180,.1);box-shadow:0 0 20px rgba(255,100,180,.2)}
+.player-btn .p-emoji{font-size:2.2rem;display:block;margin-bottom:4px}
+.highscore-box{text-align:center;font-size:.9rem;color:var(--text-secondary);margin-bottom:16px;min-height:22px}
+.highscore-box span{color:var(--accent);font-weight:800}
+.start-btn{font-family:'Fredoka One',cursive;font-size:1.3rem;padding:16px 52px;border:2px solid var(--accent);background:linear-gradient(135deg,#2d1b69,#4a2d8a);color:var(--accent);border-radius:40px;cursor:pointer;transition:all .3s;letter-spacing:2px;opacity:.4;pointer-events:none}
+.start-btn.enabled{opacity:1;pointer-events:auto}
+.start-btn.enabled:hover{transform:scale(1.05);box-shadow:0 0 30px rgba(255,100,180,.3)}
+.hud{display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:12px;padding:10px 0}
+.hud-score{display:flex;align-items:center;gap:6px;font-family:'Fredoka One',cursive;font-size:1.2rem;color:var(--accent)}
+.hud-score .val{font-size:1.4rem;transition:all .3s}
+.hud-score .val.pop{animation:pop .35s ease-out}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.5);color:#fff}100%{transform:scale(1)}}
+.hud-streak{display:flex;align-items:center;gap:4px;font-size:1rem;color:var(--streak-color)}
+.hud-streak.fire{animation:fireGlow .4s ease-in-out infinite alternate}
+@keyframes fireGlow{from{text-shadow:0 0 8px var(--streak-color)}to{text-shadow:0 0 20px #ff4500,0 0 35px var(--streak-color)}}
+.hud-qnum{font-size:.9rem;color:var(--text-secondary)}
+.progress-wrap{width:100%;height:28px;background:rgba(255,255,255,.06);border-radius:14px;margin-bottom:10px;position:relative;overflow:visible}
+.progress-fill{height:100%;border-radius:14px;background:linear-gradient(90deg,var(--accent2),var(--accent),#ff90d0);background-size:200% 100%;animation:shimmer 2s linear infinite;transition:width .6s cubic-bezier(.4,0,.2,1)}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.progress-rider{position:absolute;top:-6px;transition:left .6s cubic-bezier(.4,0,.2,1);font-size:28px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));z-index:2}
+.timer-wrap{width:100%;height:6px;background:rgba(255,255,255,.08);border-radius:4px;margin-bottom:16px;overflow:hidden}
+.timer-fill{height:100%;border-radius:4px;width:100%;transition:width .1s linear,background .5s}
+.q-card{width:100%;margin-bottom:18px;position:relative;overflow:hidden}
+.q-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent))}
+.q-badge{display:inline-block;font-family:'Fredoka One',cursive;font-size:.75rem;padding:4px 14px;border-radius:20px;margin-bottom:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#1a0a2e}
+.q-text{font-size:clamp(1.05rem,3vw,1.3rem);font-weight:700;line-height:1.55}
+.char-portrait{font-size:56px;display:block;text-align:center;margin:10px 0;filter:drop-shadow(0 4px 12px rgba(255,100,180,.3))}
+.char-detail{text-align:center;font-size:.85rem;color:var(--accent);background:rgba(255,100,180,.08);padding:4px 12px;border-radius:10px;display:inline-block;margin:0 auto 10px}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%}
+@media(max-width:500px){.options{grid-template-columns:1fr}}
+.opt-btn{position:relative;padding:14px 16px;border:2px solid rgba(255,255,255,.1);background:var(--btn-bg);color:var(--text-primary);font-size:1rem;font-weight:700;border-radius:14px;cursor:pointer;transition:all .25s;text-align:left;display:flex;align-items:center;gap:10px;overflow:hidden}
+.opt-letter{flex-shrink:0;width:32px;height:32px;border-radius:50%;background:rgba(255,100,180,.1);border:2px solid rgba(255,100,180,.2);display:flex;align-items:center;justify-content:center;font-family:'Fredoka One',cursive;font-size:.85rem;color:var(--accent)}
+.opt-btn:hover:not(.locked){border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 18px rgba(255,100,180,.12)}
+.opt-btn:hover:not(.locked) .opt-letter{background:rgba(255,100,180,.25)}
+.opt-btn.correct{border-color:var(--correct);background:rgba(76,175,80,.2);animation:correctPulse .5s ease-out}
+.opt-btn.correct .opt-letter{background:var(--correct);border-color:var(--correct);color:#fff}
+@keyframes correctPulse{0%{transform:scale(1)}30%{transform:scale(1.02)}60%{transform:scale(.99)}100%{transform:scale(1)}}
+.opt-btn.wrong{border-color:var(--wrong);background:rgba(244,67,54,.15);animation:shake .45s ease-out}
+.opt-btn.wrong .opt-letter{background:var(--wrong);border-color:var(--wrong);color:#fff}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.opt-btn.locked{pointer-events:none;opacity:.45}
+.opt-btn.correct.locked,.opt-btn.wrong.locked{opacity:1}
+.opt-btn.tf-btn{justify-content:center;text-align:center;padding:18px}
+.hint-row{width:100%;display:flex;justify-content:center;margin-top:12px}
+.hint-btn{font-family:'Nunito',sans-serif;font-size:.9rem;font-weight:700;padding:8px 22px;border:1px solid rgba(255,100,180,.25);border-radius:20px;background:rgba(255,100,180,.08);color:var(--accent);cursor:pointer;transition:all .25s}
+.hint-btn:hover{background:rgba(255,100,180,.15);border-color:var(--accent)}
+.hint-btn.used{display:none}
+.hint-box{width:100%;margin-top:10px;padding:12px 16px;border-radius:12px;background:rgba(255,100,180,.06);border:1px solid rgba(255,100,180,.15);font-size:.95rem;color:var(--accent);display:none;text-align:center}
+.hint-box.show{display:block;animation:fadeUp .3s ease-out}
+.explain-box{width:100%;margin-top:14px;padding:16px;border-radius:14px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:none;animation:fadeUp .35s ease-out}
+.explain-box.show{display:block}
+.explain-box.correct-explain{background:rgba(76,175,80,.12);border:1px solid rgba(76,175,80,.3)}
+.explain-box.wrong-explain{background:rgba(244,67,54,.1);border:1px solid rgba(244,67,54,.25)}
+.explain-icon{font-size:1.8rem;display:block;text-align:center;margin-bottom:6px}
+.explain-title{font-family:'Fredoka One',cursive;font-size:1rem;text-align:center;margin-bottom:4px}
+.explain-text{font-size:.95rem;text-align:center;line-height:1.5;color:var(--text-primary);opacity:.9}
+.next-btn{margin-top:14px;padding:12px 36px;font-family:'Fredoka One',cursive;font-size:1rem;border:2px solid var(--accent);background:linear-gradient(135deg,#2d1b69,#4a2d8a);color:var(--accent);border-radius:30px;cursor:pointer;transition:all .3s;display:none}
+.next-btn.show{display:inline-block;animation:fadeUp .3s ease-out}
+.next-btn:hover{transform:scale(1.05);box-shadow:0 4px 16px rgba(255,100,180,.25)}
+.flip-emoji{position:fixed;font-size:60px;pointer-events:none;z-index:60;animation:flipSpin 1.2s ease-out forwards}
+@keyframes flipSpin{0%{opacity:1;transform:translate(-50%,-50%) scale(0) rotateY(0)}40%{transform:translate(-50%,-50%) scale(1.3) rotateY(360deg)}100%{opacity:0;transform:translate(-50%,-80%) scale(.6) rotateY(720deg)}}
+.sparkle{position:fixed;pointer-events:none;z-index:55;font-size:1.4rem;animation:sparkleFly 1s ease-out forwards}
+@keyframes sparkleFly{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--sx),var(--sy)) scale(.3)}}
+.xp-pop{position:fixed;pointer-events:none;z-index:60;font-family:'Fredoka One',cursive;font-size:1.4rem;color:var(--accent);text-shadow:0 0 12px rgba(255,100,180,.5);animation:xpFloat 1.3s ease-out forwards}
+@keyframes xpFloat{0%{opacity:1;transform:translateY(0) scale(.6)}20%{transform:translateY(-16px) scale(1.2)}100%{opacity:0;transform:translateY(-80px) scale(.7)}}
+.confetti-piece{position:fixed;pointer-events:none;z-index:55;font-size:1.4rem;animation:confettiFall var(--dur) linear forwards}
+@keyframes confettiFall{0%{opacity:1;transform:translateY(-20px) rotate(0deg)}100%{opacity:0;transform:translateY(105vh) rotate(var(--rot))}}
+.results-card{text-align:center}
+.r-trophy{font-size:80px;display:block;animation:float 3s ease-in-out infinite;margin-bottom:4px}
+.r-title{font-family:'Fredoka One',cursive;font-size:clamp(1.5rem,4vw,2rem);color:var(--accent)}
+.r-sub{font-size:1rem;color:var(--text-secondary);margin-bottom:20px}
+.stars-row{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
+.star-item{font-size:44px;transition:all .3s}
+.star-item.earned{animation:starIn .5s ease-out backwards;filter:drop-shadow(0 0 10px rgba(255,100,180,.5))}
+.star-item.empty{opacity:.15;filter:grayscale(1)}
+@keyframes starIn{0%{transform:scale(0) rotate(-180deg);opacity:0}60%{transform:scale(1.3) rotate(10deg)}100%{transform:scale(1) rotate(0);opacity:1}}
+.badge{display:inline-block;padding:8px 24px;margin-bottom:18px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#1a0a2e;font-family:'Fredoka One',cursive;font-size:1rem;border-radius:24px;animation:badgePulse 2s ease-in-out infinite}
+@keyframes badgePulse{0%,100%{box-shadow:0 0 15px rgba(255,100,180,.2)}50%{box-shadow:0 0 30px rgba(255,100,180,.5)}}
+.new-record{display:none;font-family:'Fredoka One',cursive;font-size:1.1rem;color:#ff6b35;margin-bottom:12px;animation:recordPulse .6s ease-in-out infinite alternate}
+.new-record.show{display:block}
+@keyframes recordPulse{from{transform:scale(1);text-shadow:0 0 8px rgba(255,107,53,.3)}to{transform:scale(1.08);text-shadow:0 0 20px rgba(255,107,53,.6)}}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.stat-box{background:rgba(255,255,255,.04);border:1px solid var(--card-border);border-radius:14px;padding:14px 8px}
+.stat-val{font-family:'Fredoka One',cursive;font-size:1.6rem;color:var(--accent)}
+.stat-lbl{font-size:.8rem;color:var(--text-secondary);margin-top:2px}
+.result-btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.r-btn{font-family:'Fredoka One',cursive;font-size:1rem;padding:12px 32px;border:2px solid var(--accent);background:linear-gradient(135deg,#2d1b69,#4a2d8a);color:var(--accent);border-radius:30px;cursor:pointer;transition:all .3s}
+.r-btn:hover{transform:scale(1.04);box-shadow:0 4px 16px rgba(255,100,180,.2)}
+.r-btn.secondary{border-color:var(--text-secondary);color:var(--text-secondary)}
+.r-btn.secondary:hover{border-color:var(--accent);color:var(--accent)}
+.review-list{width:100%;max-height:60vh;overflow-y:auto;margin:16px 0;display:flex;flex-direction:column;gap:12px}
+.review-item{padding:16px;border-radius:14px;text-align:left}
+.review-item.was-correct{background:rgba(76,175,80,.08);border:1px solid rgba(76,175,80,.2)}
+.review-item.was-wrong{background:rgba(244,67,54,.08);border:1px solid rgba(244,67,54,.2)}
+.review-q{font-weight:700;font-size:1rem;margin-bottom:8px}
+.review-answers{font-size:.9rem;line-height:1.6}
+.review-your{color:var(--wrong)}.review-correct-ans{color:var(--correct)}
+.review-explain{font-size:.85rem;color:var(--text-secondary);margin-top:6px;font-style:italic}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,100,180,.2);border-radius:3px}
+.screen-shake{animation:shakeIt .4s ease-out}
+@keyframes shakeIt{0%,100%{transform:translate(0)}25%{transform:translate(-4px,2px)}50%{transform:translate(4px,-2px)}75%{transform:translate(-2px,4px)}}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div id="screen-flash"></div>
+<div id="app">
+  <div id="start-screen" class="screen active">
+    <div class="glass" style="margin-top:20px">
+      <div class="logo-emoji">🎤</div>
+      <div class="title">KPop Demon Hunters</div>
+      <div class="divider">🎤🗡️🎵🔥✨</div>
+      <div class="subtitle">HUNTR/X vs Saja Boys — Πόσα ξέρεις;</div>
+      <div class="player-label">Ποιος παίζει;</div>
+      <div class="player-row">
+        <button class="player-btn" data-player="Ajax" onclick="selectPlayer('Ajax')"><span class="p-emoji">🗡️</span>Ajax</button>
+        <button class="player-btn" data-player="Clio" onclick="selectPlayer('Clio')"><span class="p-emoji">🎤</span>Clio</button>
+      </div>
+      <div class="highscore-box" id="highscore-box"></div>
+      <div style="text-align:center"><button class="start-btn" id="start-btn" onclick="startGame()">ΞΕΚΙΝΑ!</button></div>
+    </div>
+  </div>
+  <div id="quiz-screen" class="screen">
+    <div class="hud">
+      <div class="hud-score">⭐ <span class="val" id="hud-score">0</span></div>
+      <div class="hud-streak" id="hud-streak">🔥 <span id="hud-streak-val">0</span></div>
+      <div class="hud-qnum" id="hud-qnum">1/15</div>
+    </div>
+    <div class="progress-wrap"><div class="progress-fill" id="progress-fill" style="width:0%"></div><div class="progress-rider" id="progress-rider">🎤</div></div>
+    <div class="timer-wrap"><div class="timer-fill" id="timer-fill"></div></div>
+    <div class="q-card glass" id="q-card">
+      <div class="q-badge" id="q-badge">ΙΣΤΟΡΙΑ</div>
+      <div class="char-portrait" id="char-portrait" style="display:none"></div>
+      <div class="char-detail" id="char-detail" style="display:none"></div>
+      <div class="q-text" id="q-text"></div>
+    </div>
+    <div class="options" id="options"></div>
+    <div class="hint-row" id="hint-row"><button class="hint-btn" id="hint-btn" onclick="useHint()">💡 Βοήθεια</button></div>
+    <div class="hint-box" id="hint-box"></div>
+    <div class="explain-box" id="explain-box">
+      <div class="explain-icon" id="explain-icon"></div>
+      <div class="explain-title" id="explain-title"></div>
+      <div class="explain-text" id="explain-text"></div>
+    </div>
+    <button class="next-btn" id="next-btn" onclick="nextQuestion()">ΕΠΟΜΕΝΗ →</button>
+  </div>
+  <div id="results-screen" class="screen">
+    <div class="glass results-card">
+      <div class="r-trophy" id="r-trophy">🏆</div>
+      <div class="r-title" id="r-title"></div>
+      <div class="r-sub" id="r-sub"></div>
+      <div class="stars-row" id="stars-row"></div>
+      <div class="badge" id="r-badge"></div>
+      <div class="new-record" id="new-record">🎉 Νέο Ρεκόρ!</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-val" id="s-score">0</div><div class="stat-lbl">Πόντοι</div></div>
+        <div class="stat-box"><div class="stat-val" id="s-correct">0</div><div class="stat-lbl">Σωστές</div></div>
+        <div class="stat-box"><div class="stat-val" id="s-streak">0</div><div class="stat-lbl">Μέγ. Σερί</div></div>
+      </div>
+      <div class="result-btns">
+        <button class="r-btn" onclick="resetGame()">ΠΑΙΞΕ ΞΑΝΑ 🔄</button>
+        <button class="r-btn secondary" onclick="showReview()">ΔΕΣ ΤΑ ΛΑΘΗ 📋</button>
+      </div>
+    </div>
+  </div>
+  <div id="review-screen" class="screen">
+    <div class="glass" style="text-align:center">
+      <div class="title" style="font-size:1.4rem;margin-bottom:12px">📋 Ανασκόπηση</div>
+      <div class="review-list" id="review-list"></div>
+      <button class="r-btn" onclick="showScreen('results-screen')" style="margin-top:8px">← Πίσω</button>
+    </div>
+  </div>
+</div>
+<script>
+const AC=window.AudioContext||window.webkitAudioContext;let ac;
+function initAudio(){if(!ac)ac=new AC();if(ac.state==='suspended')ac.resume()}
+function tone(f,d,type='sine',v=.12){initAudio();const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(f,ac.currentTime);g.gain.setValueAtTime(v,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}
+function sndClick(){tone(880,.04,'sine',.1)}
+function sndNewRound(){[440,554,659].forEach((f,i)=>setTimeout(()=>tone(f,.12,'triangle',.08),i*80))}
+function sndCorrect(){[659,784,988,1175].forEach((f,i)=>setTimeout(()=>tone(f,.14,'sine',.16),i*80))}
+function sndWrong(){tone(233,.25,'sawtooth',.08);setTimeout(()=>tone(175,.35,'sawtooth',.08),130)}
+function sndStreak(){[700,800,900,1000,1100,1200,1300,1500].forEach((f,i)=>setTimeout(()=>tone(f,.1,'triangle',.14),i*50))}
+function sndVictory(){[659,659,784,988,784,988,1175,1175,1397].forEach((f,i)=>setTimeout(()=>tone(f,[.12,.12,.15,.12,.15,.15,.2,.15,.4][i],'sine',.16),[0,120,250,400,550,700,900,1100,1350][i]))}
+const flash=document.getElementById('screen-flash');
+function screenFlash(c){flash.className=c;setTimeout(()=>flash.className='',300)}
+const SPK=['🎤','🗡️','🌟','💜','🔥','✨'],CNF=['🎤','🎵','🌟','💜','🔥','✨','🎉','⭐'];
+function sparkleBurst(x,y,n=10){for(let i=0;i<n;i++){const s=document.createElement('div');s.className='sparkle';s.textContent=SPK[Math.floor(Math.random()*SPK.length)];const a=Math.PI*2*i/n+Math.random()*.4,dist=60+Math.random()*60;s.style.cssText=`left:${x}px;top:${y}px;--sx:${Math.cos(a)*dist}px;--sy:${Math.sin(a)*dist}px;font-size:${1+Math.random()*.8}rem`;document.body.appendChild(s);setTimeout(()=>s.remove(),1000)}}
+function flipEmoji(x,y){const e=document.createElement('div');e.className='flip-emoji';e.textContent=['🎤','🗡️','💜','✨'][Math.floor(Math.random()*4)];e.style.left=x+'px';e.style.top=y+'px';document.body.appendChild(e);setTimeout(()=>e.remove(),1200)}
+function xpPopup(x,y,p){const e=document.createElement('div');e.className='xp-pop';e.textContent='+'+p;e.style.left=x+'px';e.style.top=y+'px';document.body.appendChild(e);setTimeout(()=>e.remove(),1300)}
+function launchConfetti(count=50){for(let i=0;i<count;i++){setTimeout(()=>{const c=document.createElement('div');c.className='confetti-piece';c.textContent=CNF[Math.floor(Math.random()*CNF.length)];const dur=2+Math.random()*2;c.style.cssText=`left:${Math.random()*100}vw;top:-20px;--dur:${dur}s;--rot:${Math.random()*720-360}deg;animation-delay:${Math.random()*.3}s;font-size:${1+Math.random()*1}rem`;document.body.appendChild(c);setTimeout(()=>c.remove(),(dur+.5)*1000)},i*25)}}
+const cvs=document.getElementById('bg-canvas'),ctx=cvs.getContext('2d');let stars=[];
+function resizeCanvas(){cvs.width=window.innerWidth;cvs.height=window.innerHeight}
+window.addEventListener('resize',resizeCanvas);resizeCanvas();
+for(let i=0;i<100;i++)stars.push({x:Math.random()*cvs.width,y:Math.random()*cvs.height,r:Math.random()*2+.3,sp:Math.random()*1+.5,ph:Math.random()*Math.PI*2,c:['#ff64b4','#b464ff','#64b4ff','#fff'][Math.floor(Math.random()*4)]});
+function drawBg(t){ctx.clearRect(0,0,cvs.width,cvs.height);stars.forEach(s=>{const b=.2+.6*Math.sin(t*.001*s.sp+s.ph);ctx.fillStyle=s.c;ctx.globalAlpha=b;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1});requestAnimationFrame(drawBg)}
+requestAnimationFrame(drawBg);
+
+const Q_CHAR=[
+  {type:'char',q:'Ποια είναι η αρχηγός των HUNTR/X;',emoji:'🎤👑',detail:'Αρχηγός & παραγωγός',hint:'Είναι μισή δαίμονας...',hint2:'Η Rumi — κόρη μέλους των Sunlight Sisters, μεγάλωσε με τη Celine',options:['Mira','Zoey','Rumi','Celine'],correct:2,explanation:'Η Rumi είναι η αρχηγός των HUNTR/X. Είναι μισή δαίμονας, μισή άνθρωπος, κόρη της Mi-yeong.'},
+  {type:'char',q:'Ποια είναι η κύρια χορεύτρια των HUNTR/X;',emoji:'💃🔥',detail:'Χορεύτρια & μαχήτρια',hint:'Αρχικά δεν εμπιστεύεται εύκολα...',hint2:'Η Mira — επαναστατικό πνεύμα αλλά πιστή στις φίλες της',options:['Rumi','Mira','Zoey','Celine'],correct:1,explanation:'Η Mira είναι η lead dancer και χορογράφος. Φαίνεται σκληρή αλλά είναι πολύ πιστή!'},
+  {type:'char',q:'Ποια γράφει τους στίχους των HUNTR/X;',emoji:'✍️🎵',detail:'Στιχουργός & rapper',hint:'Η νεότερη του γκρουπ...',hint2:'Η Zoey — μεγάλωσε στο Burbank της Καλιφόρνιας',options:['Rumi','Mira','Zoey','Mi-yeong'],correct:2,explanation:'Η Zoey είναι η στιχουργός και rapper, η νεότερη. Μεγάλωσε στο Burbank, Καλιφόρνια!'},
+  {type:'char',q:'Ποιος είναι ο αρχηγός των Saja Boys;',emoji:'😈🎤',detail:'Αρχηγός Saja Boys',hint:'Πούλησε την ψυχή του πριν 400 χρόνια...',hint2:'Ο Jinu — φτωχός τραγουδιστής του 1600 που έκανε συμφωνία με τον Gwi-Ma',options:['Mystery','Abby','Jinu','Romance'],correct:2,explanation:'Ο Jinu πούλησε την ψυχή του στον Gwi-Ma τον 17ο αιώνα για μουσικό ταλέντο. Στο τέλος θυσιάζεται για τη Rumi!'},
+  {type:'char',q:'Ποιος είναι ο βασιλιάς των δαιμόνων;',emoji:'👹👑',detail:'Demon King',hint:'Τρέφεται με ανθρώπινες ψυχές...',hint2:'Gwi-Ma — ο απόλυτος κακός, θέλει να καταστρέψει το Honmoon',options:['Jinu','Gwi-Ma','Mystery','Abby'],correct:1,explanation:'Ο Gwi-Ma είναι ο βασιλιάς των δαιμόνων. Τρέφεται με ψυχές και θέλει να σπάσει το Honmoon.'},
+  {type:'char',q:'Ποια εκπαίδευσε τα κορίτσια από μικρές;',emoji:'👩‍🏫⚔️',detail:'Μέντορας & προστάτιδα',hint:'Μεγάλωσε τη Rumi σαν κόρη της...',hint2:'Η Celine — φωνή της Yunjin Kim, μέντορας των HUNTR/X',options:['Mi-yeong','Celine','Zoey','Mira'],correct:1,explanation:'Η Celine (Yunjin Kim) εκπαίδευσε τις HUNTR/X από μικρές και μεγάλωσε τη Rumi.'},
+  {type:'char',q:'Ποιο μέλος των Saja Boys μπορεί να εξαφανίζεται;',emoji:'👻💨',detail:'Τηλεμεταφορά / Αορατότητα',hint:'Το όνομά του σημαίνει "μυστήριο"...',hint2:'Ο Mystery — εξαφανίζεται κατά βούληση, αδύνατο να τον πιάσεις',options:['Baby','Romance','Abby','Mystery'],correct:3,explanation:'Ο Mystery μπορεί να εξαφανίζεται και να τηλεμεταφέρεται!'},
+  {type:'char',q:'Ποιο μέλος των Saja Boys ελέγχει τα συναισθήματα με τη φωνή;',emoji:'🎵😵',detail:'Mind control μέσω τραγουδιού',hint:'Κάνει τους fans κενά κελύφη...',hint2:'Ο Jinu — η φωνή του υπνωτίζει, κλέβει ψυχές',options:['Mystery','Romance','Jinu','Baby'],correct:2,explanation:'Ο Jinu ελέγχει νους και συναισθήματα μέσω τραγουδιού, μετατρέποντας τους fans σε κενά κελύφη.'}
+];
+const Q_QUOTE=[
+  {type:'quote',q:'Ποιο τραγούδι τραγουδά η Rumi στη τελική μάχη;',hint:'Ένα τραγούδι που μιλά για αποδοχή...',hint2:'"What It Sounds Like" — σπάει τη μαγεία του Gwi-Ma',options:['"Golden"','"Takedown"','"What It Sounds Like"','"How It\'s Done"'],correct:2,explanation:'Η Rumi τραγουδά "What It Sounds Like" στην τελική μάχη, ελευθερώνοντας τη Mira και τη Zoey!'},
+  {type:'quote',q:'Ποιο τραγούδι θα δημιουργούσε το Golden Honmoon;',hint:'Ένα τραγούδι με χρυσό τίτλο...',hint2:'"Golden" — θα ενεργοποιούσε το τελικό κλείδωμα κατά των δαιμόνων',options:['"How It\'s Done"','"Golden"','"Takedown"','"What It Sounds Like"'],correct:1,explanation:'Το "Golden" θα δημιουργούσε το Golden Honmoon — μόνιμο φράγμα κατά δαιμόνων!'},
+  {type:'quote',q:'Ποιο τραγούδι αποκαλύπτει τη δαιμονική φύση της Rumi;',hint:'Ένα τραγούδι εκδίκησης...',hint2:'"Takedown" — οι Saja Boys την ανάγκασαν στα Idol Awards',options:['"Golden"','"Takedown"','"How It\'s Done"','"What It Sounds Like"'],correct:1,explanation:'Το "Takedown" αποκάλυψε τα δαιμονικά σημάδια της Rumi στα Idol Awards!'},
+  {type:'quote',q:'Πώς λέγεται ο fan club των HUNTR/X;',hint:'Σχετίζεται με αυτό που κάνουν κρυφά...',hint2:'Hunters — κυνηγοί, όπως οι ίδιες!',options:['Hunters','Warriors','Honmoons','Golden Stars'],correct:0,explanation:'Ο fan club λέγεται "Hunters" (Κυνηγοί)!'},
+  {type:'quote',q:'Ποιο είναι το σύνθημα των HUNTR/X;',hint:'Σχετίζεται με fans και φράγμα...',hint2:'"Happy fans, happy Honmoon!"',options:['"Happy fans, happy Honmoon!"','"Music is our weapon!"','"Golden forever!"','"Hunters unite!"'],correct:0,explanation:'Το σύνθημα: "Happy fans, happy Honmoon!" — χαρούμενοι fans = δυνατό Honmoon.'}
+];
+const Q_PLOT=[
+  {type:'plot',q:'Τι είναι το Honmoon;',hint:'Ένα μαγικό φράγμα...',hint2:'Προστατευτικό φράγμα που εμποδίζει τους δαίμονες',options:['Ένα τραγούδι','Μαγικό φράγμα κατά δαιμόνων','Ένα όπλο','Ένα βραβείο'],correct:1,explanation:'Το Honmoon (혼문 = "πύλη ψυχής") είναι μαγικό φράγμα. Οι HUNTR/X το ενισχύουν με τραγούδι!'},
+  {type:'plot',q:'Πώς δημιουργήθηκε αρχικά το Honmoon;',hint:'Τρεις γυναίκες στα αρχαία χρόνια...',hint2:'Τρεις demon hunters τραγούδησαν και δημιούργησαν το φράγμα',options:['Με μαγεία ενός μάγου','Τρεις γυναίκες τραγούδησαν','Ο Gwi-Ma το έφτιαξε','Έπεσε από τον ουρανό'],correct:1,explanation:'Τρεις γυναίκες-κυνηγοί δημιούργησαν το Honmoon με τη δύναμη του τραγουδιού!'},
+  {type:'plot',q:'Τι σχέδιο έχουν οι Saja Boys;',hint:'Θέλουν να αδυνατίσουν τις HUNTR/X...',hint2:'Κλέβουν fans για να αδυνατίσουν το Honmoon',options:['Να γίνουν διάσημοι','Να κλέψουν fans & καταστρέψουν το Honmoon','Να κάνουν φίλες','Να νικήσουν σε διαγωνισμό'],correct:1,explanation:'Κλέβουν fans από τις HUNTR/X, αδυνατίζοντας το Honmoon για να ελευθερωθεί ο Gwi-Ma!'},
+  {type:'plot',q:'Τι μυστικό κρύβει η Rumi;',hint:'Δεν είναι εντελώς ανθρώπινη...',hint2:'Είναι μισή δαίμονας',options:['Θέλει να φύγει','Είναι μισή δαίμονας','Δεν ξέρει να τραγουδά','Γνωρίζει τον Jinu'],correct:1,explanation:'Η Rumi κρύβει ότι είναι μισή δαίμονας! Η μητέρα της ήταν Sunlight Sister.'},
+  {type:'plot',q:'Τι κάνει ο Jinu στο τέλος;',hint:'Αλλάζει πλευρά...',hint2:'Θυσιάζεται — δέχεται το χτύπημα αντί της Rumi',options:['Γίνεται βασιλιάς','Θυσιάζεται για τη Rumi','Δραπετεύει','Τραγουδά μαζί τους'],correct:1,explanation:'Ο Jinu θυσιάζεται για τη Rumi, δίνοντάς της τη δύναμη να νικήσει τον Gwi-Ma!'},
+  {type:'plot',q:'Πού αποκαλύπτονται τα σημάδια της Rumi;',hint:'Σε μεγάλη τελετή...',hint2:'Στα Idol Awards — μπροστά σε χιλιάδες',options:['Σε πρόβα','Στα Idol Awards','Στο σπίτι','Στη μάχη'],correct:1,explanation:'Στα Idol Awards, μπροστά σε ολόκληρο τον κόσμο!'},
+  {type:'plot',q:'Πού γίνεται η τελική μάχη;',hint:'Διάσημο σημείο στη Σεούλ...',hint2:'Στον Πύργο Namsan',options:['Σε στάδιο','Στον Πύργο Namsan','Σε νησί','Στο στούντιο'],correct:1,explanation:'Η τελική μάχη γίνεται στον Πύργο Namsan στη Σεούλ!'},
+  {type:'plot',q:'Γιατί η Rumi χάνει τη φωνή της;',hint:'Η διπλή φύση της...',hint2:'Η δαιμονική κληρονομιά επηρεάζει τη φωνή',options:['Αρρωσταίνει','Η δαιμονική φύση της','Ο Gwi-Ma','Τραγούδησε πολύ'],correct:1,explanation:'Η δαιμονική κληρονομιά αρχίζει να επηρεάζει τη φωνή της!'}
+];
+const Q_TF=[
+  {type:'tf',q:'Οι HUNTR/X έχουν 5 μέλη.',hint:'Μέτρησε: Rumi, Mira, Zoey...',hint2:'Μόνο 3! Οι Saja Boys είναι 5.',correct:1,explanation:'ΨΕΜΑ! Οι HUNTR/X είναι τρίο: Rumi, Mira και Zoey.'},
+  {type:'tf',q:'Οι Saja Boys είναι δαίμονες μεταμφιεσμένοι.',hint:'Δεν είναι απλοί ανταγωνιστές...',hint2:'Ναι! Δαίμονες που παριστάνουν K-pop idols',correct:0,explanation:'ΑΛΗΘΕΙΑ! Οι Saja Boys είναι δαίμονες μεταμφιεσμένοι σε K-pop αστέρια.'},
+  {type:'tf',q:'Η Zoey μεγάλωσε στην Κορέα.',hint:'Αμερικανίδα;',hint2:'Burbank, Καλιφόρνια — η μόνη που δεν μεγάλωσε στην Κορέα',correct:1,explanation:'ΨΕΜΑ! Η Zoey μεγάλωσε στο Burbank, Καλιφόρνια.'},
+  {type:'tf',q:'Ο Jinu ζει από τα 1600 μ.Χ.',hint:'Πούλησε την ψυχή του πολύ παλιά...',hint2:'Ναι — φτωχός τραγουδιστής τον 17ο αιώνα',correct:0,explanation:'ΑΛΗΘΕΙΑ! Ο Jinu γεννήθηκε στα 1600 και πούλησε την ψυχή του στον Gwi-Ma.'},
+  {type:'tf',q:'Το χρώμα των HUNTR/X είναι μπλε.',hint:'Σκέψου Golden Honmoon...',hint2:'Χρυσό (gold)!',correct:1,explanation:'ΨΕΜΑ! Το επίσημο χρώμα είναι χρυσό (gold)!'},
+  {type:'tf',q:'Ο Romance δημιουργεί ψεύτικα αισθήματα αγάπης.',hint:'Τι σημαίνει το όνομά του...',hint2:'Ναι — μονόπλευρη αγάπη που κάνει fans ευάλωτους',correct:0,explanation:'ΑΛΗΘΕΙΑ! Ο Romance δημιουργεί μονόπλευρη αγάπη, κάνοντάς τους fans στόχους του Gwi-Ma.'},
+  {type:'tf',q:'Η ταινία κέρδισε Χρυσή Σφαίρα.',hint:'Μεγάλη επιτυχία...',hint2:'Ναι! Best Animated Feature στις Χρυσές Σφαίρες 2025',correct:0,explanation:'ΑΛΗΘΕΙΑ! Κέρδισε Best Animated Feature στις Χρυσές Σφαίρες και Critics\' Choice Awards!'}
+];
+
+let player='',gameQs=[],qi=0,score=0,streak=0,maxStreak=0,correctCount=0,hintUsed=false,timerInterval=null,timeLeft=100,history=[],answered=false;
+const TIMER_MS=20000;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function pickQuestions(){return shuffle([...shuffle([...Q_CHAR]).slice(0,5),...shuffle([...Q_QUOTE]).slice(0,3),...shuffle([...Q_PLOT]).slice(0,4),...shuffle([...Q_TF]).slice(0,3)])}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
+function selectPlayer(n){sndClick();player=n;document.querySelectorAll('.player-btn').forEach(b=>b.classList.toggle('selected',b.dataset.player===n));document.getElementById('start-btn').classList.add('enabled');updateHSDisplay()}
+function getHSKey(){return'kpop-dh-hs-'+player}
+function getHS(){return parseInt(localStorage.getItem(getHSKey())||'0')}
+function setHS(v){localStorage.setItem(getHSKey(),v)}
+function updateHSDisplay(){const h=getHS();document.getElementById('highscore-box').innerHTML=h>0?`Ρεκόρ ${player}: <span>${h}</span> πόντοι`:''}
+function startGame(){if(!player)return;sndClick();setTimeout(()=>sndNewRound(),200);gameQs=pickQuestions();qi=0;score=0;streak=0;maxStreak=0;correctCount=0;history=[];updateHUD();showScreen('quiz-screen');loadQuestion()}
+function loadQuestion(){
+  answered=false;hintUsed=false;const q=gameQs[qi];
+  const bm={char:'ΧΑΡΑΚΤΗΡΑΣ',quote:'ΑΤΑΚΑ',plot:'ΙΣΤΟΡΙΑ',tf:'ΑΛΗΘΕΙΑ / ΨΕΜΑ'};
+  document.getElementById('q-badge').textContent=bm[q.type];
+  const p=document.getElementById('char-portrait'),d=document.getElementById('char-detail');
+  if(q.type==='char'){p.style.display='block';p.textContent=q.emoji;d.style.display='inline-block';d.textContent=q.detail}else{p.style.display='none';d.style.display='none'}
+  document.getElementById('q-text').textContent=q.q;
+  const grid=document.getElementById('options');grid.innerHTML='';const L=['Α','Β','Γ','Δ'];
+  if(q.type==='tf'){['Αλήθεια ✅','Ψέμα ❌'].forEach((l,i)=>{const b=document.createElement('button');b.className='opt-btn tf-btn';b.innerHTML=`<span>${l}</span>`;b.onclick=e=>answer(i,e);grid.appendChild(b)})}
+  else{q.options.forEach((o,i)=>{const b=document.createElement('button');b.className='opt-btn';b.innerHTML=`<span class="opt-letter">${L[i]}</span><span>${o}</span>`;b.onclick=e=>answer(i,e);grid.appendChild(b)})}
+  document.getElementById('hint-btn').classList.remove('used');document.getElementById('hint-btn').style.display='';
+  document.getElementById('hint-row').style.display='flex';document.getElementById('hint-box').classList.remove('show');document.getElementById('hint-box').textContent='';
+  document.getElementById('explain-box').classList.remove('show','correct-explain','wrong-explain');document.getElementById('next-btn').classList.remove('show');
+  updateHUD();startTimer();sndNewRound();
+}
+function useHint(){if(hintUsed||answered)return;hintUsed=true;sndClick();document.getElementById('hint-box').textContent='💡 '+gameQs[qi].hint2;document.getElementById('hint-box').classList.add('show');document.getElementById('hint-btn').classList.add('used')}
+function startTimer(){clearInterval(timerInterval);timeLeft=100;const bar=document.getElementById('timer-fill');bar.style.width='100%';bar.style.background='linear-gradient(90deg,#4caf50,#8bc34a)';const step=100/(TIMER_MS/50);timerInterval=setInterval(()=>{timeLeft-=step;const p=Math.max(0,timeLeft);bar.style.width=p+'%';if(p>60)bar.style.background='linear-gradient(90deg,#4caf50,#8bc34a)';else if(p>30)bar.style.background='linear-gradient(90deg,#ffeb3b,#ff9800)';else bar.style.background='linear-gradient(90deg,#ff9800,#f44336)';if(timeLeft<=0){clearInterval(timerInterval);timeUp()}},50)}
+function timeUp(){if(answered)return;answered=true;const q=gameQs[qi];document.querySelectorAll('.opt-btn').forEach((b,i)=>{b.classList.add('locked');if(i===q.correct)b.classList.add('correct')});streak=0;sndWrong();screenFlash('flash-red');history.push({q:q.q,yourAnswer:'⏰ Τέλος χρόνου',correctAnswer:q.type==='tf'?(q.correct===0?'Αλήθεια':'Ψέμα'):q.options[q.correct],correct:false,explanation:q.explanation});showExplain(false,q.explanation);document.getElementById('next-btn').classList.add('show');document.getElementById('next-btn').textContent=qi<gameQs.length-1?'ΕΠΟΜΕΝΗ →':'ΑΠΟΤΕΛΕΣΜΑΤΑ 🏆';updateHUD()}
+function answer(idx){
+  if(answered)return;answered=true;sndClick();clearInterval(timerInterval);
+  const q=gameQs[qi],ok=idx===q.correct,btns=document.querySelectorAll('.opt-btn');
+  btns.forEach((b,i)=>{b.classList.add('locked');if(i===q.correct)b.classList.add('correct');if(i===idx&&!ok)b.classList.add('wrong')});
+  let ya,ca;if(q.type==='tf'){ya=idx===0?'Αλήθεια':'Ψέμα';ca=q.correct===0?'Αλήθεια':'Ψέμα'}else{ya=q.options[idx];ca=q.options[q.correct]}
+  if(ok){correctCount++;streak++;if(streak>maxStreak)maxStreak=streak;const tb=Math.floor(timeLeft/10),sm=streak>=3?2:1,bp=hintUsed?5:10,pts=(bp+tb)*sm;score+=pts;sndCorrect();if(streak>=3){sndStreak();screenFlash('flash-gold')}else screenFlash('flash-green');const r=btns[idx].getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;sparkleBurst(cx,cy,12);flipEmoji(cx,cy);xpPopup(cx-16,r.top-8,pts)}
+  else{streak=0;sndWrong();screenFlash('flash-red');document.getElementById('app').classList.add('screen-shake');setTimeout(()=>document.getElementById('app').classList.remove('screen-shake'),400)}
+  history.push({q:q.q,yourAnswer:ya,correctAnswer:ca,correct:ok,explanation:q.explanation});
+  showExplain(ok,q.explanation);document.getElementById('next-btn').classList.add('show');document.getElementById('next-btn').textContent=qi<gameQs.length-1?'ΕΠΟΜΕΝΗ →':'ΑΠΟΤΕΛΕΣΜΑΤΑ 🏆';document.getElementById('hint-row').style.display='none';updateHUD();
+}
+function showExplain(ok,txt){const b=document.getElementById('explain-box');b.classList.remove('correct-explain','wrong-explain');b.classList.add('show',ok?'correct-explain':'wrong-explain');document.getElementById('explain-icon').textContent=ok?'🎉':'💡';document.getElementById('explain-title').textContent=ok?'Σωστά!':'Η σωστή απάντηση:';document.getElementById('explain-title').style.color=ok?'var(--correct)':'var(--wrong)';document.getElementById('explain-text').textContent=txt}
+function nextQuestion(){sndClick();qi++;if(qi>=gameQs.length){showResults();return}loadQuestion()}
+function updateHUD(){const sv=document.getElementById('hud-score');sv.textContent=score;sv.classList.add('pop');setTimeout(()=>sv.classList.remove('pop'),350);document.getElementById('hud-streak-val').textContent=streak;const sd=document.getElementById('hud-streak');if(streak>=3)sd.classList.add('fire');else sd.classList.remove('fire');document.getElementById('hud-qnum').textContent=`${Math.min(qi+1,gameQs.length)}/${gameQs.length}`;const pct=(qi/gameQs.length)*100;document.getElementById('progress-fill').style.width=pct+'%';document.getElementById('progress-rider').style.left=`calc(${pct}% - 14px)`}
+function showResults(){
+  showScreen('results-screen');const pct=correctCount/gameQs.length;let tr,ti,su,ba;
+  if(pct>=.9){tr='👑';ti='ΤΕΛΕΙΟ, '+player+'!';su='Αληθινό μέλος των HUNTR/X!';ba='👑 DEMON HUNTER'}
+  else if(pct>=.7){tr='🏆';ti='Εξαιρετικά, '+player+'!';su='Γνωρίζεις σχεδόν τα πάντα!';ba='🏆 HUNTER'}
+  else if(pct>=.5){tr='🥈';ti='Πολύ καλά, '+player+'!';su='Πιστό μέλος του fan club!';ba='🎤 FAN'}
+  else if(pct>=.3){tr='🥉';ti='Καλή προσπάθεια!';su='Δες την ταινία ξανά!';ba='🎵 TRAINEE'}
+  else{tr='📺';ti='Πάμε ξανά!';su='Ώρα για rewatch!';ba='📺 ΝΕΟΣ FAN'}
+  document.getElementById('r-trophy').textContent=tr;document.getElementById('r-title').textContent=ti;document.getElementById('r-sub').textContent=su;document.getElementById('r-badge').textContent=ba;
+  document.getElementById('s-score').textContent=score;document.getElementById('s-correct').textContent=correctCount+'/'+gameQs.length;document.getElementById('s-streak').textContent=maxStreak;
+  const sn=correctCount>=9?3:correctCount>=7?2:correctCount>=4?1:0;const sr=document.getElementById('stars-row');sr.innerHTML='';
+  for(let i=0;i<3;i++){const s=document.createElement('span');s.className='star-item '+(i<sn?'earned':'empty');s.textContent='⭐';s.style.animationDelay=i*.3+'s';sr.appendChild(s)}
+  const hs=getHS(),nr=document.getElementById('new-record');if(score>hs){setHS(score);nr.classList.add('show')}else nr.classList.remove('show');
+  if(pct>=.6){sndVictory();setTimeout(()=>launchConfetti(pct>=.9?80:40),500)}
+}
+function showReview(){showScreen('review-screen');const l=document.getElementById('review-list');l.innerHTML='';history.forEach((h,i)=>{const d=document.createElement('div');d.className='review-item glass '+(h.correct?'was-correct':'was-wrong');d.innerHTML=`<div class="review-q">${i+1}. ${h.q}</div><div class="review-answers">${h.correct?'':`<div class="review-your">Η απάντησή σου: ${h.yourAnswer}</div>`}<div class="review-correct-ans">Σωστή: ${h.correctAnswer}</div></div><div class="review-explain">${h.explanation}</div>`;l.appendChild(d)})}
+function resetGame(){sndClick();showScreen('start-screen');updateHSDisplay()}
+</script>
+</body>
+</html>
